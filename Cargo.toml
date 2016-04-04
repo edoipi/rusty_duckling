@@ -1,0 +1,6 @@
+[package]
+name = "rusty_duckling"
+version = "0.1.0"
+authors = ["Michal Dyrek <butozerca@gmail.com>"]
+
+[dependencies]
