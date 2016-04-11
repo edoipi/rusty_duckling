@@ -22,11 +22,9 @@ fn not(x: bool) -> bool {
 }
 
 fn check(instance: &Instance, vec: &Vec<bool>) -> bool {
-    for it in 0..instance.clauses.len() {
-        let clause = &instance.clauses[it];
+    for ref clause in &instance.clauses {
         let mut satisfied = false;
-        for it2 in 0..clause.literals.len() {
-            let literal = clause.literals[it2];
+        for &literal in &clause.literals {
             let fun: fn(bool) -> bool = if literal > 0 {id} else {not};
             let val = vec[(literal.abs() - 1) as usize];
             satisfied = fun(val);
