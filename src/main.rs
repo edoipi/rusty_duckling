@@ -1,16 +1,18 @@
 #[macro_use] extern crate text_io;
 extern crate regex;
 use regex::Regex;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::io;
 
 struct Clause {
-    literals: Vec<i32>,
+    literals: BTreeSet<i32>,
 }
 
 struct Instance {
     nbvar: i32,
     nbclauses: i32,
-    clauses: Vec<Clause>
+    clauses: BTreeMap<i32, Clause>
 }
 
 fn id(x: bool) -> bool {
@@ -22,7 +24,7 @@ fn not(x: bool) -> bool {
 }
 
 fn check(instance: &Instance, vec: &Vec<bool>) -> bool {
-    for ref clause in &instance.clauses {
+    for (_, ref clause) in &instance.clauses {
         let mut satisfied = false;
         for &literal in &clause.literals {
             let fun: fn(bool) -> bool = if literal > 0 {id} else {not};
@@ -64,6 +66,10 @@ fn simple_solve(instance: Instance) {
     println!("");
 }
 
+fn unit_propagation(instance: Instance) {
+    //TO DO
+}
+
 fn main() {
     let comment = Regex::new("^c.*").unwrap();
     let mut input: String;
@@ -79,7 +85,7 @@ fn main() {
         };
     }
     
-    let mut instance = Instance {nbvar: 0, nbclauses: 0, clauses: Vec::new()};
+    let mut instance = Instance {nbvar: 0, nbclauses: 0, clauses: BTreeMap::new()};
     let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
     match re.captures(&input) {
         Some(caps) => {
@@ -90,24 +96,16 @@ fn main() {
     };
     
     for i in 0..instance.nbclauses {
-        instance.clauses.push(Clause{literals: Vec::new()});
+        instance.clauses.insert(i, Clause{literals: BTreeSet::new()});
         loop {
             let tmp: i32 = read!();
             match tmp {
                 0 => break,
-                x => instance.clauses[i as usize].literals.push(x),   
+                x => instance.clauses.get_mut(&i).unwrap().literals.insert(x),   
             };
         }
     }
     
     simple_solve(instance);
-    
-    /*for i in 0..instance.clauses.len() {
-        let lits = &instance.clauses[i].literals;
-        for j in 0..lits.len() {
-            print!("{} ", lits[j]);
-        }
-        println!("");
-    }*/
 }
 
