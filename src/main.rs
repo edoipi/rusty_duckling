@@ -23,6 +23,10 @@ fn not(x: bool) -> bool {
     !x
 }
 
+fn lit_num(var: usize, pos: bool) -> i32 {
+    if pos {var as i32} else {-(var as i32)}
+}
+
 fn check(instance: &Instance, vec: &Vec<bool>) -> bool {
     for (_, ref clause) in &instance.clauses {
         let mut satisfied = false;
@@ -58,12 +62,17 @@ fn subsets(instance: &Instance, vec: &mut Vec<bool>, depth: usize) -> bool {
 
 fn simple_solve(instance: Instance) {
     let mut vec = vec![false; instance.nbvar as usize];
-    let val = subsets(&instance, &mut vec, 0);
-    println!("{}", val);
-    for i in vec {
-        print!("{} ", i);
+    let satisfiable = subsets(&instance, &mut vec, 0);
+    if satisfiable {
+        println!("s SATISFIABLE");
+        print!("v ");
+        for (i, val) in vec.iter().enumerate() {
+            print!("{} ", lit_num(i + 1, *val));
+        }
+        println!("0");
+    } else {
+        println!("s UNSATISFIABLE");
     }
-    println!("");
 }
 
 fn unit_propagation(instance: Instance) {
