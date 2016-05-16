@@ -22,24 +22,39 @@ pub fn preprocess() -> Instance {
     }
     
     let mut instance = Instance {nbvar: 0, nbclauses: 0, assignment: Vec::new(), literals: HashSet::new(), clauses: HashMap::new()};
-    let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
-    match re.captures(&input) {
-        Some(caps) => {
-            instance.nbvar = caps[1].parse::<i32>().unwrap();
-            instance.nbclauses = caps[2].parse::<i32>().unwrap();
-        },
-        None => panic!("Invalid input"),
-    };
+    {
+        let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
+        match re.captures(&input) {
+            Some(caps) => {
+                instance.nbvar = caps[1].parse::<i32>().unwrap();
+                instance.nbclauses = caps[2].parse::<i32>().unwrap();
+            },
+            None => panic!("Invalid input"),
+        };
+    }
     
     for i in 0..instance.nbclauses {
         instance.clauses.insert(i, Clause{literals: HashSet::new()});
-        loop {
+        input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => {
+                for it in input.split_whitespace() {
+                    //println!("{}", it);
+                    if it != "0" {
+                        //println!("{}", it);
+                        instance.clauses.get_mut(&i).unwrap().literals.insert(it.parse::<i32>().unwrap());
+                    }
+                }
+            },
+            Err(error) => println!("error: {}", error),
+        };
+        /*loop {
             let tmp: i32 = read!();
             match tmp {
                 0 => break,
                 x => instance.clauses.get_mut(&i).unwrap().literals.insert(x),   
             };
-        }
+        }*/
     }
     
     instance.assignment = vec![false; instance.nbvar as usize];

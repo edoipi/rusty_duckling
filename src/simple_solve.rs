@@ -31,19 +31,24 @@ fn check(instance: &Instance) -> bool {
     return true;
 }
 
-fn subsets(instance: &mut Instance, iter: &mut Iter<usize>) -> bool {
+fn subsets(instance: &mut Instance, mut iter: Iter<usize>) -> bool {
     match iter.next() {
         None => { 
+            /*for &val in &instance.assignment {
+                print!("{} ", val);
+            }
+            println!("");*/
             return check(instance)
         },
         Some(&depth) => {
-            println!("depth {}", depth);
+            //println!("depth {}", depth);
             instance.assignment[depth] = false;
-            if subsets(instance, iter) {
+            if subsets(instance, iter.clone()) {
                 return true;
             }
+            //println!("depth {}", depth);
             instance.assignment[depth] = true;
-            if subsets(instance, iter) {
+            if subsets(instance, iter.clone()) {
                 return true;
             }
             return false;
@@ -67,6 +72,6 @@ pub fn print_solution(satisfiable: bool, instance: &Instance) {
 pub fn simple_solve(mut instance: &mut Instance) {
     let not_set = instance.literals.clone(); //no idea how to fix that
 
-    let satisfiable = subsets(&mut instance, &mut not_set.iter());
+    let satisfiable = subsets(&mut instance, not_set.iter());
     print_solution(satisfiable, instance);
 }
