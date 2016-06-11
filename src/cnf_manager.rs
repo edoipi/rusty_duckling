@@ -72,8 +72,8 @@ pub struct CnfManager {
 	pub next_var : i32,
 
 	pub lit_pool : Vec<i32>,
-    pub lit_pool_size_orig : i32,
-	pub clauses : Vec<i32>,
+	pub lit_pool_size_orig : i32,
+	pub clauses : Vec<Vec<i32>>,
 	pub next_clause : i32,
 
 	pub decision_stack : Vec<i32>,
@@ -112,9 +112,9 @@ impl CnfManager {
 		//TODO initialize fields
 		ret
 	}
-    
-    pub fn sort_vars(&mut self) {
-        let uns = unsafe {&mut *(self as *mut CnfManager)};
-        self.var_order.sort_by(|a, b| SCORE(a, &uns).cmp(&SCORE(b, &uns)));
-    }
+
+	pub fn sort_vars(&mut self) {
+		let uns = unsafe {&mut *(self as *mut CnfManager)};
+		self.var_order.sort_by(|a, b| SCORE(a, &uns).cmp(&SCORE(b, &uns)));
+	}
 }
