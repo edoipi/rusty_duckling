@@ -1,14 +1,35 @@
 use std::collections::VecDeque;
 
+pub enum VA {
+	Neg = 0,
+	Pos = 1,
+	Free = 2
+} 
+
 pub struct Variable {
 	pub uip_mark : bool,
 	pub phase : bool,
-	pub value : i8,
+	pub value : VA,
 	pub decision_level : i32,
 	pub ante : Vec<i32>,
 	pub activity : [i32; 2],
 	pub bin_imp : [Vec<i32>; 2],
 	pub watch : [Vec<Vec<i32>>; 2]
+}
+
+impl Variable {
+    pub fn new() -> Variable {
+    	Variable {
+    		uip_mark : false,
+    		phase : false,
+    		value : VA::Free,
+    		decision_level : 0,
+    		ante : Vec::new(),
+    		activity : [0, 0],
+    		bin_imp : [Vec::new(), Vec::new()],
+    		watch : [Vec::new(), Vec::new()]
+    	}
+    }
 }
 
 pub struct CnfManager {
