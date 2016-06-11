@@ -7,32 +7,32 @@ pub enum VA {
 	Free = 2
 }
 
-fn SIGN(&lit : &i32) -> VA {
+pub fn SIGN(&lit : &i32) -> VA {
 	if lit > 0 {VA::Pos} else {VA::Neg}
 }
 
-fn VAR(&lit : &i32) -> usize {
+pub fn VAR(&lit : &i32) -> usize {
 	lit.abs() as usize
 }
 
-fn NEG(&lit : &i32) -> i32 {
+pub fn NEG(&lit : &i32) -> i32 {
 	-lit
 }
 
-fn FREE(&lit : &i32, m : &CnfManager) -> bool {
+pub fn FREE(&lit : &i32, m : &CnfManager) -> bool {
 	m.vars[VAR(&lit)].value == VA::Free
 }
 
-fn SET(&lit : &i32, m : &CnfManager) -> bool {
+pub fn SET(&lit : &i32, m : &CnfManager) -> bool {
 	m.vars[VAR(&lit)].value == SIGN(&lit)
 }
 
-fn RESOLVED(&lit : &i32, m : &CnfManager) -> bool {
+pub fn RESOLVED(&lit : &i32, m : &CnfManager) -> bool {
 	let neg = NEG(&lit);
 	m.vars[VAR(&lit)].value == SIGN(&neg)
 }
 
-fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
+pub fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
 	m.vars[var as usize].activity[0] + m.vars[var as usize].activity[1]
 }
 
@@ -70,6 +70,7 @@ pub struct CnfManager {
 	pub next_var : i32,
 
 	pub lit_pool : Vec<i32>,
+    pub lit_pool_size_orig : i32,
 	pub clauses : Vec<i32>,
 	pub next_clause : i32,
 
