@@ -1,10 +1,40 @@
 use std::collections::VecDeque;
 
+#[derive(PartialEq)]
 pub enum VA {
 	Neg = 0,
 	Pos = 1,
 	Free = 2
-} 
+}
+
+fn SIGN(&lit : &i32) -> VA {
+	if lit > 0 {VA::Pos} else {VA::Neg}
+}
+
+fn VAR(&lit : &i32) -> usize {
+	lit.abs() as usize
+}
+
+fn NEG(&lit : &i32) -> i32 {
+	-lit
+}
+
+fn FREE(&lit : &i32, m : &CnfManager) -> bool {
+	m.vars[VAR(&lit)].value == VA::Free
+}
+
+fn SET(&lit : &i32, m : &CnfManager) -> bool {
+	m.vars[VAR(&lit)].value == SIGN(&lit)
+}
+
+fn RESOLVED(&lit : &i32, m : &CnfManager) -> bool {
+	let neg = NEG(&lit);
+	m.vars[VAR(&lit)].value == SIGN(&neg)
+}
+
+fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
+	m.vars[var as usize].activity[0] + m.vars[var as usize].activity[1]
+}
 
 pub struct Variable {
 	pub uip_mark : bool,
@@ -18,18 +48,18 @@ pub struct Variable {
 }
 
 impl Variable {
-    pub fn new() -> Variable {
-    	Variable {
-    		uip_mark : false,
-    		phase : false,
-    		value : VA::Free,
-    		decision_level : 0,
-    		ante : Vec::new(),
-    		activity : [0, 0],
-    		bin_imp : [Vec::new(), Vec::new()],
-    		watch : [Vec::new(), Vec::new()]
-    	}
-    }
+	pub fn new() -> Variable {
+		Variable {
+			uip_mark : false,
+			phase : false,
+			value : VA::Free,
+			decision_level : 0,
+			ante : Vec::new(),
+			activity : [0, 0],
+			bin_imp : [Vec::new(), Vec::new()],
+			watch : [Vec::new(), Vec::new()]
+		}
+	}
 }
 
 pub struct CnfManager {
