@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use Cnf;
 
 #[derive(PartialEq)]
 pub enum VA {
@@ -82,4 +83,30 @@ pub struct CnfManager {
 	pub conflict_lit : VecDeque<i32>,
 	pub tmp_conflict_lit : VecDeque<i32>,
 	pub conflict_clause : Vec<i32>
+}
+
+impl CnfManager {
+	pub fn new(cnf : &Cnf) -> CnfManager {
+		let mut ret = CnfManager {
+			var_count : cnf.var_count,
+			vars : Vec::new(),
+			var_order : Vec::new(),
+			var_position : Vec::new(),
+			next_var : 0,
+			lit_pool : Vec::new(),
+			clauses : Vec::new(),
+			next_clause : 0,
+			decision_stack : Vec::new(),
+			assertion_level : 0,
+			decision_level : 0,
+			decision_count : 0,
+			conflict_count : 0,
+			restart_count : 0,
+			conflict_lit : VecDeque::new(),
+			tmp_conflict_lit : VecDeque::new(),
+			conflict_clause : Vec::new()
+		};
+		//TODO initialize fields
+		ret
+	}
 }
