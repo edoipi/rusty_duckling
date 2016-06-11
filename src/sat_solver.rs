@@ -156,6 +156,46 @@ impl SatSolver {
 		0
 	}
 
+	pub fn run(&mut self) -> bool {
+		if self.cnf_manager.decision_level == 0 {
+			return false;
+		}
+		let mut lit = self.selectLiteral();
+		while lit != 0 {
+			if !self.cnf_manager.decide(lit) {
+				loop {
+					if self.cnf_manager.assertion_level == 0 {
+						return false;
+					}
+
+					if self.cnf_manager.conflict_count == self.next_decay {
+						self.next_decay += 128;
+						self.cnf_manager.scoreDecay();
+					}
+
+					self.cnf_manager.next_clause = (self.cnf_manager.clauses.len() - 1) as i32;
+
+					if self.cnf_manager.conflict_count == self.next_restart {
+						self.cnf_manager.restart_count += 1;
+						self.next_restart += self.luby.next() * self.luby_unit;
+						self.cnf_manager.backtrack(1);
+						if self.cnf_manager.decision_level != self.cnf_manager.assertion_level {
+							break;
+						}
+					} else {
+						self.cnf_manager.backtrack(self.cnf_manager.assertion_level);
+					}
+
+					if !self.cnf_manager.assertCL() {
+						break;
+					}
+				}
+			}
+			lit = self.selectLiteral();
+		}
+		true
+	}
+
 	pub fn verifySolution(&self) -> bool {
 		let ref pool = self.cnf_manager.lit_pool;
 		for mut i in 0..self.cnf_manager.lit_pool_size_orig as usize {

@@ -113,6 +113,50 @@ impl CnfManager {
 		ret
 	}
 
+	pub fn setLiteral(&self, lit : i32, ante : &Vec<i32>) -> () {
+		//TODO implement
+	}
+
+	pub fn assertLiteral(&self, lit : i32, ante : &Vec<i32>) -> bool {
+		//TODO implement
+		false
+	}
+
+	pub fn assertUnitClauses(&self) -> bool {
+		//TODO implement
+		false
+	}
+
+	pub fn decide(&self, lit : i32) -> bool {
+		//TODO implement
+		false
+	}
+
+	pub fn learnClause(&self, first_lit : &Vec<i32>) -> () {
+		//TODO implement
+	}
+
+	pub fn addClause(&self) -> () {
+		//TODO implement
+	}
+
+	pub fn assertCL(&self) -> bool {
+		//TODO implement
+		false
+	}
+
+	pub fn backtrack(&self, level : i32) -> () {
+		//TODO implement
+	}
+
+	pub fn scoreDecay(&self) -> () {
+		//TODO implement
+	}
+
+	pub fn updateScores(&self, first : &Vec<i32>) -> () {
+		//TODO implement
+	}
+
 	pub fn sort_vars(&mut self) {
 		let uns = unsafe {&mut *(self as *mut CnfManager)};
 		self.var_order.sort_by(|a, b| SCORE(a, &uns).cmp(&SCORE(b, &uns)));
