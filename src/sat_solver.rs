@@ -1,3 +1,4 @@
+use Cnf;
 use cnf_manager::*;
 
 pub struct Luby {
@@ -33,6 +34,57 @@ pub struct SatSolver {
 }
 
 impl SatSolver {
+    pub fn new(cnf: &Cnf) -> SatSolver {
+        let mut ret = SatSolver {
+            cnf_manager : CnfManager::new(cnf),
+            luby : Luby::new(),
+            luby_unit : 512,
+            next_decay : 128,
+            next_restart : 0
+        };
+        
+        ret.next_restart = ret.luby.next()*ret.luby_unit;
+        
+        if ret.cnf_manager.decision_level == 0 {
+            return ret;
+        }
+        
+        
+        for i in 1..(ret.cnf_manager.var_count+1) as usize {
+            if ret.cnf_manager.vars[i].value == VA::Free {
+                if ret.cnf_manager.vars[i].activity[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Neg as usize] > 0 {
+                    //ret.cnf_manager.assertLiteral(-(i as i32), Vec::new());
+                } else if ret.cnf_manager.vars[i].activity[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Pos as usize] > 0 {
+                    //ret.cnf_manager.assertLiteral((i as i32), Vec::new());
+                }
+            }            
+        }
+        
+        for i in 1..(ret.cnf_manager.var_count+1) as usize {
+            if ret.cnf_manager.vars[i].value == VA::Free && SCORE(&(i as i32), &ret.cnf_manager) > 0 {
+                ret.cnf_manager.var_order.push(i as i32);
+                ret.cnf_manager.vars[i].phase = 
+                    if ret.cnf_manager.vars[i].activity[VA::Pos as usize] > ret.cnf_manager.vars[i].activity[VA::Neg as usize] {
+                        true
+                    } else {
+                        false
+                    };
+            }
+        }
+        
+        //ret.cnf_manager.var_order.sort_by(|a, b| SCORE(a, &ret.cnf_manager).cmp(&SCORE(b, &ret.cnf_manager)));
+        ret.cnf_manager.sort_vars();
+        
+        for i in 0..ret.cnf_manager.var_order.len() {
+            ret.cnf_manager.var_position[ ret.cnf_manager.var_order[i as usize] as usize ] = i as i32;
+        }
+        
+        ret.cnf_manager.next_var = 0;
+        ret.cnf_manager.next_clause = (ret.cnf_manager.clauses.len() - 1) as i32;
+        
+        ret
+    }
+
     pub fn verifySolution(&self) -> bool {
         let ref pool = self.cnf_manager.lit_pool;
         for mut i in 0..self.cnf_manager.lit_pool_size_orig as usize {

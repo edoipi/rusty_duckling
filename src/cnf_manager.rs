@@ -37,6 +37,7 @@ pub fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
 	m.vars[var as usize].activity[0] + m.vars[var as usize].activity[1]
 }
 
+
 pub struct Variable {
 	pub uip_mark : bool,
 	pub phase : bool,
@@ -111,4 +112,9 @@ impl CnfManager {
 		//TODO initialize fields
 		ret
 	}
+    
+    pub fn sort_vars(&mut self) {
+        let uns = unsafe {&mut *(self as *mut CnfManager)};
+        self.var_order.sort_by(|a, b| SCORE(a, &uns).cmp(&SCORE(b, &uns)));
+    }
 }
