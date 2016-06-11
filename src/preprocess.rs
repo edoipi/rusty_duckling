@@ -1,12 +1,8 @@
 use regex::Regex;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::io;
-use std;
-use structs::Clause;
-use structs::Instance;
+use cnf::Cnf;
 
-pub fn preprocess() -> Instance {
+pub fn preprocess() -> Cnf {
     let comment = Regex::new("^c.*").unwrap();
     let mut input: String;
     loop {
@@ -21,43 +17,34 @@ pub fn preprocess() -> Instance {
         };
     }
     
-    let mut instance = Instance {nbvar: 0, nbclauses: 0, assignment: Vec::new(), literals: HashSet::new(), clauses: HashMap::new()};
+    let mut instance = Cnf {var_count: 0, clause_count: 0, clause_sum_length: 0, clauses: Vec::new()};
     {
         let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
         match re.captures(&input) {
             Some(caps) => {
-                instance.nbvar = caps[1].parse::<i32>().unwrap();
-                instance.nbclauses = caps[2].parse::<i32>().unwrap();
+                instance.var_count = caps[1].parse::<i32>().unwrap();
+                instance.clause_count = caps[2].parse::<i32>().unwrap();
             },
             None => panic!("Invalid input"),
         };
     }
     
-    for i in 0..instance.nbclauses {
-        instance.clauses.insert(i, Clause{literals: HashSet::new()});
+    for _ in 0..instance.clause_count {
         input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
+                let mut vec = Vec::<i32>::new();
                 for it in input.split_whitespace() {
-                    //println!("{}", it);
                     if it != "0" {
-                        //println!("{}", it);
-                        instance.clauses.get_mut(&i).unwrap().literals.insert(it.parse::<i32>().unwrap());
+                        vec.push(it.parse::<i32>().unwrap());
                     }
                 }
+                instance.clause_sum_length += vec.len() as i32;
+                instance.clauses.push(vec);
             },
             Err(error) => println!("error: {}", error),
         };
-        /*loop {
-            let tmp: i32 = read!();
-            match tmp {
-                0 => break,
-                x => instance.clauses.get_mut(&i).unwrap().literals.insert(x),   
-            };
-        }*/
     }
-    
-    instance.assignment = vec![false; instance.nbvar as usize];
-    instance.literals = (0..instance.nbvar as usize).collect();
+
     instance
 }
