@@ -1,0 +1,14 @@
+[package]
+name = "thread-id"
+version = "2.0.0"
+authors = ["Ruud van Asseldonk <dev@veniogames.com>"]
+license = "Apache-2.0"
+readme = "readme.md"
+keywords = ["thread", "pthread", "getcurrentthreadid"]
+description = "Get a unique thread ID"
+repository = "https://github.com/ruuda/thread-id"
+documentation = "https://ruuda.github.io/thread-id/doc/v2.0.0/thread-id/"
+
+[dependencies]
+libc = { path = "../libc" }
+kernel32-sys = { path = "../kernel32-sys" }
