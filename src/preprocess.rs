@@ -3,7 +3,7 @@ use std::io;
 use cnf::Cnf;
 
 pub fn preprocess() -> Cnf {
-    let comment = Regex::new("^c.*").unwrap();
+    /*let comment = Regex::new("^c.*").unwrap();
     let mut input: String;
     loop {
         input = String::new();
@@ -15,8 +15,9 @@ pub fn preprocess() -> Cnf {
                 },
             Err(error) => println!("error: {}", error),
         };
-    }
-    
+    }*/
+    let mut input = String::new();
+    let _ = io::stdin().read_line(&mut input);
     let mut instance = Cnf {var_count: 0, clause_count: 0, clause_sum_length: 0, clauses: Vec::new()};
     {
         let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
