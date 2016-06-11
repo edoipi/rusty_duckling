@@ -95,6 +95,7 @@ impl CnfManager {
 			var_position : Vec::new(),
 			next_var : 0,
 			lit_pool : Vec::new(),
+			lit_pool_size_orig : 0,
 			clauses : Vec::new(),
 			next_clause : 0,
 			decision_stack : Vec::new(),
