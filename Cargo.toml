@@ -5,5 +5,5 @@ authors = ["Michal Dyrek <butozerca@gmail.com>",
            "Mateusz Twaróg <rusty_duckling@mateusztwarog.com>"]
 
 [dependencies]
-regex = "*"
-text_io = "*"
+regex = { path = "deps/regex" }
+text_io = { path = "deps/rust-si" }
