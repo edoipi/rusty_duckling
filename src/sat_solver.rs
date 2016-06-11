@@ -56,7 +56,7 @@ impl SatSolver {
     }
     
     pub fn printSolution(&self) -> () {
-        for i in 1..self.cnf_manager.var_count as usize {
+        for i in 1..(self.cnf_manager.var_count+1) as usize {
             let ref vars = self.cnf_manager.vars;
             if vars[i].value == VA::Pos {
                 print!("{} ", i);
