@@ -130,9 +130,18 @@ impl<'w> CnfManager<'w> {
 		false
 	}
 
-	pub fn assertUnitClauses(&self) -> bool {
-		//TODO implement
-		false
+	pub fn assertUnitClauses(&mut self) -> bool {
+		let mut lit : i32 = *(self.decision_stack.last().unwrap());
+		while lit != 0 {
+			self.decision_stack.pop();
+			if !self.assertLiteral(lit, Some(&self.lit_pool), (self.lit_pool.len() - 1) as i32) {
+				let level = self.decision_level - 1;
+				self.backtrack(level);
+				return false;
+			}
+			lit = *(self.decision_stack.last().unwrap());
+		}
+		true
 	}
 
 	pub fn decide(&mut self, lit : i32) -> bool {
@@ -154,7 +163,7 @@ impl<'w> CnfManager<'w> {
 	}
 
 	pub fn backtrack(&mut self, level : i32) -> () {
-		let mut var = VAR(&self.decision_stack.last().unwrap());
+		let mut var = VAR(self.decision_stack.last().unwrap());
 		while self.vars[var].decision_level > level {
 			if self.vars[var].decision_level < self.decision_level {
 				let val = self.vars[var].value.clone() as i32;
@@ -165,7 +174,7 @@ impl<'w> CnfManager<'w> {
 				self.next_var = self.var_position[var];
 			}
 			self.decision_stack.pop();
-			var = VAR(&self.decision_stack.last().unwrap());
+			var = VAR(self.decision_stack.last().unwrap());
 		}
 		self.decision_level = level;
 	}
