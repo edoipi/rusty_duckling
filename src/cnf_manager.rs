@@ -204,7 +204,6 @@ impl<'w> CnfManager<'w> {
     }
 
 	pub fn learnClause(&'w mut self, conflict_clause : &Vec<i32>, mut ind : usize) -> () {
-		//TODO implement
 		if self.decision_level == 1 {
 			self.assertion_level = 0;
 			return;
