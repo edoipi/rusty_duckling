@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use Cnf;
+use std::ptr;
 
 #[derive(PartialEq)]
 pub enum VA {
@@ -38,25 +39,25 @@ pub fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
 }
 
 
-pub struct Variable {
+pub struct Variable<'w> {
 	pub uip_mark : bool,
 	pub phase : bool,
 	pub value : VA,
 	pub decision_level : i32,
-	pub ante : Vec<i32>,
+	pub ante : Option<&'w Vec<i32>>,
 	pub activity : [i32; 2],
 	pub bin_imp : [Vec<i32>; 2],
 	pub watch : [Vec<Vec<i32>>; 2]
 }
 
-impl Variable {
-	pub fn new() -> Variable {
+impl<'w> Variable<'w> {
+	pub fn new() -> Variable<'w> {
 		Variable {
 			uip_mark : false,
 			phase : false,
 			value : VA::Free,
 			decision_level : 0,
-			ante : Vec::new(),
+			ante : None,
 			activity : [0, 0],
 			bin_imp : [Vec::new(), Vec::new()],
 			watch : [Vec::new(), Vec::new()]
@@ -64,9 +65,9 @@ impl Variable {
 	}
 }
 
-pub struct CnfManager {
+pub struct CnfManager<'w> {
 	pub var_count : i32,
-	pub vars : Vec<Variable>,
+	pub vars : Vec<Variable<'w>>,
 	pub var_order : Vec<i32>,
 	pub var_position : Vec<i32>,
 	pub next_var : i32,
@@ -87,8 +88,8 @@ pub struct CnfManager {
 	pub conflict_clause : Vec<i32>
 }
 
-impl CnfManager {
-	pub fn new(cnf : &Cnf) -> CnfManager {
+impl<'w> CnfManager<'w> {
+	pub fn new(cnf : &Cnf) -> CnfManager<'w> {
 		let mut ret = CnfManager {
 			var_count : cnf.var_count,
 			vars : Vec::new(),

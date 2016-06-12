@@ -26,16 +26,16 @@ impl Luby {
 	}
 }
 
-pub struct SatSolver {
-	pub cnf_manager : CnfManager,
+pub struct SatSolver<'w> {
+	pub cnf_manager : CnfManager<'w>,
 	pub luby : Luby,
 	pub luby_unit : i32,
 	pub next_decay : i32,
 	pub next_restart : i32
 }
 
-impl SatSolver {
-	pub fn new(cnf: &Cnf) -> SatSolver {
+impl<'w> SatSolver<'w> {
+	pub fn new(cnf: &Cnf) -> SatSolver<'w> {
 		let mut ret = SatSolver {
 			cnf_manager : CnfManager::new(cnf),
 			luby : Luby::new(),
