@@ -48,7 +48,7 @@ pub struct Variable<'w> {
 	pub ante_ind : usize,
 	pub activity : [i32; 2],
 	pub bin_imp : [Vec<i32>; 2],
-	pub watch : [Vec<Vec<i32>>; 2]
+	pub watch : [Vec<usize>; 2]
 }
 
 impl<'w> Variable<'w> {
@@ -76,7 +76,7 @@ pub struct CnfManager<'w> {
 
 	pub lit_pool : Vec<i32>,
 	pub lit_pool_size_orig : i32,
-	pub clauses : Vec<Vec<i32>>,
+	pub clauses : Vec<usize>,
 	pub next_clause : i32,
 
 	pub decision_stack : Vec<i32>,
@@ -87,8 +87,7 @@ pub struct CnfManager<'w> {
 	pub restart_count : i32,
 	pub conflict_lit : VecDeque<i32>,
 	pub tmp_conflict_lit : VecDeque<i32>,
-	pub conflict_clause : Option<&'w Vec<i32>>,
-    pub conflict_clause_ind : i32
+    pub conflict_clause_ind : usize
 }
 
 impl<'w> CnfManager<'w> {
@@ -111,7 +110,6 @@ impl<'w> CnfManager<'w> {
 			restart_count : 0,
 			conflict_lit : VecDeque::new(),
 			tmp_conflict_lit : VecDeque::new(),
-			conflict_clause : None,
             conflict_clause_ind : 0
 		};
 		//TODO initialize fields
@@ -125,7 +123,7 @@ impl<'w> CnfManager<'w> {
 		self.vars[VAR(&lit)].decision_level = self.decision_level;
 	}
 
-	pub fn assertLiteral(&self, lit : i32, ante : Option<&Vec<i32>>, ante_ind : i32) -> bool {
+	pub fn assertLiteral(&self, lit : i32, ante : Option<&Vec<i32>>, ante_ind : usize) -> bool {
 		//TODO implement
 		false
 	}
@@ -134,7 +132,7 @@ impl<'w> CnfManager<'w> {
 		let mut lit : i32 = *(self.decision_stack.last().unwrap());
 		while lit != 0 {
 			self.decision_stack.pop();
-			if !self.assertLiteral(lit, Some(&self.lit_pool), (self.lit_pool.len() - 1) as i32) {
+			if !self.assertLiteral(lit, Some(&self.lit_pool), self.lit_pool.len() - 1) {
 				let level = self.decision_level - 1;
 				self.backtrack(level);
 				return false;
@@ -154,12 +152,26 @@ impl<'w> CnfManager<'w> {
 		//TODO implement
 	}
 
-	pub fn addClause(&self) -> () {
-		//TODO implement
+	pub fn addClause(&'w mut self) -> () {
+		self.conflict_clause_ind = self.lit_pool.len();
+		self.lit_pool.push(*self.conflict_lit.back().unwrap());
+		if self.conflict_lit.len() > 1 {
+			self.clauses.push(self.conflict_clause_ind);
+			self.lit_pool.push(*self.conflict_lit.front().unwrap());
+			let back_lit = self.conflict_lit.back().unwrap();
+			self.vars[VAR(back_lit)].watch[SIGN(back_lit) as usize].push(self.conflict_clause_ind);
+			let front_lit = self.conflict_lit.front().unwrap();
+			self.vars[VAR(front_lit)].watch[SIGN(front_lit) as usize].push(self.conflict_clause_ind);
+
+			for i in 1..self.conflict_lit.len()-1 {
+				self.lit_pool.push(self.conflict_lit[i]);
+			}
+		}
+		self.lit_pool.push(0);
 	}
 
 	pub fn assertCL(&self) -> bool {
-		return self.assertLiteral(self.conflict_clause.unwrap()[0], self.conflict_clause, self.conflict_clause_ind+1);
+		return self.assertLiteral(self.lit_pool[self.conflict_clause_ind], Some(&self.lit_pool), self.conflict_clause_ind+1);
 	}
 
 	pub fn backtrack(&mut self, level : i32) -> () {

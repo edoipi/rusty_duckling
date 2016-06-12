@@ -97,7 +97,9 @@ impl<'w> SatSolver<'w> {
 			self.cnf_manager.next_clause = i;
 
 			let mut sat = false;
-			for &lit in self.cnf_manager.clauses[i as usize].iter() {
+			let mut ind = self.cnf_manager.clauses[i as usize] as usize;
+			while self.cnf_manager.lit_pool[ind] != 0 {
+				let lit = self.cnf_manager.lit_pool[ind];
 				if lit == 0 {
 					break;
 				}
@@ -105,13 +107,16 @@ impl<'w> SatSolver<'w> {
 					sat = true;
 					break;
 				}
+				ind += 1;
 			}
 			if sat {
 				continue;
 			}
 
 			let mut score = -1;
-			for &lit in self.cnf_manager.clauses[i as usize].iter() {
+			ind = self.cnf_manager.clauses[i as usize] as usize;
+			while self.cnf_manager.lit_pool[ind] != 0 {
+				let lit = self.cnf_manager.lit_pool[ind];
 				if lit == 0 {
 					break;
 				}
@@ -119,6 +124,7 @@ impl<'w> SatSolver<'w> {
 					x = VAR(&lit) as i32;
 					score = SCORE(&x, &self.cnf_manager);
 				}
+				ind += 1;
 			}
 
 			let d = self.cnf_manager.vars[x as usize].activity[VA::Pos as usize]
