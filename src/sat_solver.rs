@@ -80,7 +80,7 @@ impl<'w> SatSolver<'w> {
 		}
 
 		ret.cnf_manager.next_var = 0;
-		ret.cnf_manager.next_clause = (ret.cnf_manager.clauses.len() - 1) as i32;
+		ret.cnf_manager.next_clause = ret.cnf_manager.clauses.len() - 1;
 
 		ret
 	}
@@ -178,7 +178,7 @@ impl<'w> SatSolver<'w> {
 						self.cnf_manager.scoreDecay();
 					}
 
-					self.cnf_manager.next_clause = (self.cnf_manager.clauses.len() - 1) as i32;
+					self.cnf_manager.next_clause = self.cnf_manager.clauses.len() - 1;
 
 					if self.cnf_manager.conflict_count == self.next_restart {
 						self.cnf_manager.restart_count += 1;

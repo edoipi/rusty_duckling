@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use Cnf;
 use std::ptr;
+use std::process::exit;
 
 #[derive(PartialEq, Clone)]
 pub enum VA {
@@ -75,9 +76,9 @@ pub struct CnfManager<'w> {
 	pub next_var : i32,
 
 	pub lit_pool : Vec<i32>,
-	pub lit_pool_size_orig : i32,
+	pub lit_pool_size_orig : usize,
 	pub clauses : Vec<usize>,
-	pub next_clause : i32,
+	pub next_clause : usize,
 
 	pub decision_stack : Vec<i32>,
 	pub assertion_level : i32,
@@ -104,7 +105,7 @@ impl<'w> CnfManager<'w> {
 			next_clause : 0,
 			decision_stack : Vec::new(),
 			assertion_level : 0,
-			decision_level : 0,
+			decision_level : 1,
 			decision_count : 0,
 			conflict_count : 0,
 			restart_count : 0,
@@ -112,13 +113,67 @@ impl<'w> CnfManager<'w> {
 			tmp_conflict_lit : VecDeque::new(),
             conflict_clause_ind : 0
 		};
-		//TODO initialize fields
+		let mut imp : [Vec<Vec<i32>>; 2] = [Vec::new(), Vec::new()];
+		for i in 0..ret.var_count+1 {
+			ret.vars.push(Variable::new());
+			ret.var_position.push(0);
+			imp[0].push(Vec::new());
+			imp[1].push(Vec::new());
+		}
+
+		ret.decision_stack.push(0);
+		ret.vars[0].decision_level = 0;
+		ret.vars[0].value = VA::Free;
+
+		for i in 0..cnf.clause_count as usize {
+			if cnf.clauses[i].len() == 1 {
+				let lit = cnf.clauses[i][0];
+				if FREE(&lit, &ret) {
+					ret.decision_stack.push(lit);
+					ret.setLiteral(lit, None, 0);
+				} else if RESOLVED(&lit, &ret) {
+					println!("UNSAT");
+					exit(0);
+				}
+			} else if cnf.clauses[i].len() == 2 {
+				let lit0 = cnf.clauses[i][0];
+				let lit1 = cnf.clauses[i][1];
+				imp[SIGN(&lit0) as usize][VAR(&lit0)].push(lit1);
+				imp[SIGN(&lit1) as usize][VAR(&lit1)].push(lit0);
+				ret.vars[VAR(&lit0)].activity[SIGN(&lit0) as usize] += 1;
+				ret.vars[VAR(&lit1)].activity[SIGN(&lit1) as usize] += 1;
+			} else {
+				let lit0 = cnf.clauses[i][0];
+				let lit1 = cnf.clauses[i][1];
+				ret.vars[VAR(&lit0)].watch[SIGN(&lit0) as usize].push(ret.lit_pool.len());
+				ret.vars[VAR(&lit1)].watch[SIGN(&lit1) as usize].push(ret.lit_pool.len());
+				for j in cnf.clauses[i].iter() {
+					ret.vars[VAR(j)].activity[SIGN(j) as usize] += 1;
+					ret.lit_pool.push(j.clone());
+				}
+			}
+		}
+		ret.lit_pool_size_orig = ret.lit_pool.len();
+
+		for i in 1..ret.var_count+1 {
+			for j in 0..2 {
+				ret.vars[i as usize].bin_imp[j].push(0);
+				ret.vars[i as usize].bin_imp[j].push(if j == VA::Pos as usize {i} else {-i});
+				ret.vars[i as usize].bin_imp[j].push(0);
+				for k in imp[j][i as usize].iter() {
+					ret.vars[i as usize].bin_imp[j].push(k.clone());
+				}
+				ret.vars[i as usize].bin_imp[j].push(0);
+			}
+		}
+
+		ret.assertUnitClauses();
 		ret
 	}
 
-	pub fn setLiteral(&mut self, lit : i32, ante : &'w Vec<i32>, ind : usize) -> () {
+	pub fn setLiteral(&mut self, lit : i32, ante : Option<&'w Vec<i32>>, ind : usize) -> () {
 		self.vars[VAR(&lit)].value = SIGN(&lit);
-		self.vars[VAR(&lit)].ante = Some(ante);
+		self.vars[VAR(&lit)].ante = ante;
 		self.vars[VAR(&lit)].ante_ind = ind;
 		self.vars[VAR(&lit)].decision_level = self.decision_level;
 	}
