@@ -16,7 +16,7 @@ CnfManager::CnfManager(Cnf &cnf) {
     nDecisions = nConflicts = nRestarts = 0;
     varOrder = (unsigned *) calloc(vc + 1, sizeof(unsigned));
     varPosition = (unsigned *) calloc(vc + 1, sizeof(unsigned));
-    stack.resize(vc+1, -1);
+    stack.resize(vc + 1, -1);
 
     // implication lists in lieu of watch lists for binary clauses
     // temporary storage
@@ -71,7 +71,7 @@ CnfManager::CnfManager(Cnf &cnf) {
         }
     }
     litPoolSize = litPoolSizeOrig = (p - litPool);
-    
+
     // binary clause implication lists
     for (i = 1; i <= vc; i++)
         for (j = 0; j <= 1; j++) {

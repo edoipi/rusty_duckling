@@ -33,7 +33,7 @@ SatSolver::SatSolver(Cnf &cnf) : CnfManager(cnf) {
             varOrder[nVars++] = i;
             vars[i].phase = (vars[i].activity[_POSI] > vars[i].activity[_NEGA]) ? _POSI : _NEGA;
         }
-    sort(varOrder, varOrder + nVars, [&](unsigned a, unsigned b) -> bool {return SCORE(a) > SCORE(b);});
+    sort(varOrder, varOrder + nVars, [&](unsigned a, unsigned b) -> bool { return SCORE(a) > SCORE(b); });
     for (unsigned i = 0; i < nVars; i++) varPosition[varOrder[i]] = i;
     nextVar = 0;
     nextClause = clauses.size() - 1;
