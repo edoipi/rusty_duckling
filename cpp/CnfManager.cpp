@@ -30,7 +30,7 @@ CnfManager::CnfManager(Cnf &cnf) {
     vars[0].value = _FREE;
 
     // create litPool
-    int *p = litPool = (int *) calloc(litPoolCapacity = (cnf.lc + cnf.cc) * 2, sizeof(int));
+    int *p = litPool = (int *) calloc(litPoolCapacity = (cnf.lc + cnf.cc) * 2 * 20, sizeof(int));
     if (litPool == NULL) {
         fprintf(stderr, "Unable to allocate %lu bytes of memory\n", (long unsigned) litPoolCapacity * sizeof(int));
         printf("s UNKOWN\n");
@@ -258,8 +258,10 @@ void CnfManager::learnClause(int *first) {
         vars[var].mark = false;
 
         // if not decision, update scores for the whole ante clause
-        if (vars[var].ante)
-            updateScores(vars[var].ante - 1);
+        if (vars[var].ante) {
+            updateScore(var);
+            updateScores(vars[var].ante);
+        }
 
         // update nextVar
         if (varPosition[var] < nextVar) nextVar = varPosition[var];
@@ -320,7 +322,7 @@ inline void CnfManager::addClause() {
     unsigned size = conflictLits.size();
 
     // create new litPool if necessary
-    if (litPoolSize + size + 1 > litPoolCapacity) {
+    /*if (litPoolSize + size + 1 > litPoolCapacity) {
         litPoolCapacity *= 2;
         litPool = (int *) malloc(litPoolCapacity * sizeof(int));
         while (litPool == NULL && litPoolCapacity > litPoolSizeOrig) {
@@ -334,7 +336,7 @@ inline void CnfManager::addClause() {
         }
         litPools.push_back(litPool);
         litPoolSize = 0;
-    }
+    }*/
 
     // clause starts here
     conflictClause = litPool + litPoolSize;
@@ -363,30 +365,35 @@ inline void CnfManager::addClause() {
 
 void CnfManager::updateScores(int *p) {
     for (; *p; p++) {
-        unsigned v = VAR(*p);
-        vars[v].activity[SIGN(*p)]++;
-        unsigned it = varPosition[v];
-
-        // variable already at beginning
-        if (it == 0) continue;
-        unsigned score = SCORE(v);
-
-        // order hasn't been violated
-        if (score <= SCORE(varOrder[it - 1])) continue;
-
-        // promote var up the order, using binary search from zChaff04
-        int step = 0x400, q;
-        for (q = ((int) it) - step; q >= 0; q -= step)
-            if (SCORE(varOrder[q]) >= score) break;
-        for (q += step, step >>= 1; step > 0; step >>= 1) {
-            if (q - step >= 0) if (SCORE(varOrder[q - step]) < score)
-                q -= step;
-        }
-
-        // swap it and q
-        varOrder[it] = varOrder[q];
-        varPosition[v] = q;
-        varPosition[varOrder[q]] = it;
-        varOrder[q] = v;
+        updateScore(*p);
     }
+}
+
+
+inline void CnfManager::updateScore(int z) {
+    unsigned v = VAR(z);
+    vars[v].activity[SIGN(z)]++;
+    unsigned it = varPosition[v];
+
+    // variable already at beginning
+    if (it == 0) return;
+    unsigned score = SCORE(v);
+
+    // order hasn't been violated
+    if (score <= SCORE(varOrder[it - 1])) return;
+
+    // promote var up the order, using binary search from zChaff04
+    int step = 0x400, q;
+    for (q = ((int) it) - step; q >= 0; q -= step)
+        if (SCORE(varOrder[q]) >= score) break;
+    for (q += step, step >>= 1; step > 0; step >>= 1) {
+        if (q - step >= 0) if (SCORE(varOrder[q - step]) < score)
+            q -= step;
+    }
+
+    // swap it and q
+    varOrder[it] = varOrder[q];
+    varPosition[v] = q;
+    varPosition[varOrder[q]] = it;
+    varOrder[q] = v;
 }

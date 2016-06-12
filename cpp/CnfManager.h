@@ -74,6 +74,7 @@ protected:
     void backtrack(unsigned level);        // undo assignments in levels > level
     void scoreDecay();            // divide scores by constant
     void updateScores(int *first);        // update variable scores and positions
+    void updateScore(int lit);        // helper
 public:
     CnfManager() { };
 
