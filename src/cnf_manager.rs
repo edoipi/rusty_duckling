@@ -162,8 +162,45 @@ impl<'w> CnfManager<'w> {
 		}
 	}
 
-	pub fn updateScores(&self, first : &Vec<i32>) -> () {
-		//TODO implement
+	pub fn updateScores(&mut self, vec : &Vec<i32>, mut ind : usize) -> () {
+		while vec[ind] != 0 {
+			let lit = &vec[ind];
+			let v = VAR(lit);
+			self.vars[v].activity[SIGN(lit) as usize] += 1;
+			let pos = self.var_position[v];
+			ind += 1;
+
+			if pos == 0 {
+				continue;
+			}
+
+			let score = SCORE(&(v as i32), &self);
+			if score <= SCORE(&self.var_order[(pos - 1) as usize], &self) {
+				continue;
+			}
+
+			let mut step = 0x400;
+			let mut q = pos - step;
+			while q >= 0 {
+				if SCORE(&self.var_order[q as usize], &self) >= score {
+					break;
+				}
+				q -= step;
+			}
+			q += step;
+			step >>= 1;
+			while step > 0 {
+				if q - step >= 0 && SCORE(&self.var_order[(q - step) as usize], &self) < score {
+					q -= step;
+				}
+				step >>= 1;
+			}
+
+			self.var_order[pos as usize] = self.var_order[q as usize];
+			self.var_position[v] = q;
+			self.var_position[self.var_order[q as usize] as usize] = pos;
+			self.var_order[q as usize] = v as i32;
+		}
 	}
 
 	pub fn sort_vars(&mut self) {
