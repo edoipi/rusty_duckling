@@ -182,7 +182,8 @@ impl<'w> SatSolver<'w> {
 							break;
 						}
 					} else {
-						self.cnf_manager.backtrack(self.cnf_manager.assertion_level);
+						let level = self.cnf_manager.assertion_level;
+						self.cnf_manager.backtrack(level);
 					}
 
 					if !self.cnf_manager.assertCL() {

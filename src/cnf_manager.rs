@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use Cnf;
 use std::ptr;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum VA {
 	Neg = 0,
 	Pos = 1,
@@ -153,8 +153,21 @@ impl<'w> CnfManager<'w> {
 		return self.assertLiteral(self.conflict_clause.unwrap()[0], self.conflict_clause, self.conflict_clause_ind+1);
 	}
 
-	pub fn backtrack(&self, level : i32) -> () {
-		//TODO implement
+	pub fn backtrack(&mut self, level : i32) -> () {
+		let mut var = VAR(&self.decision_stack.last().unwrap());
+		while self.vars[var].decision_level > level {
+			if self.vars[var].decision_level < self.decision_level {
+				let val = self.vars[var].value.clone() as i32;
+				self.vars[var].phase = val > 0;
+			}
+			self.vars[var].value = VA::Free;
+			if self.var_position[var] < self.next_var {
+				self.next_var = self.var_position[var];
+			}
+			self.decision_stack.pop();
+			var = VAR(&self.decision_stack.last().unwrap());
+		}
+		self.decision_level = level;
 	}
 
 	pub fn scoreDecay(&mut self) -> () {
