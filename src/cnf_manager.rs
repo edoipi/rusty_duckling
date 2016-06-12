@@ -149,8 +149,11 @@ impl CnfManager {
 		//TODO implement
 	}
 
-	pub fn scoreDecay(&self) -> () {
-		//TODO implement
+	pub fn scoreDecay(&mut self) -> () {
+		for i in 1..(self.var_count + 1) as usize {
+			self.vars[i].activity[0] >>= 1;
+			self.vars[i].activity[1] >>= 1;
+		}
 	}
 
 	pub fn updateScores(&self, first : &Vec<i32>) -> () {
