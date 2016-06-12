@@ -87,7 +87,8 @@ pub struct CnfManager<'w> {
 	pub restart_count : i32,
 	pub conflict_lit : VecDeque<i32>,
 	pub tmp_conflict_lit : VecDeque<i32>,
-	pub conflict_clause : Vec<i32>
+	pub conflict_clause : Option<&'w Vec<i32>>,
+    pub conflict_clause_ind : i32
 }
 
 impl<'w> CnfManager<'w> {
@@ -110,7 +111,8 @@ impl<'w> CnfManager<'w> {
 			restart_count : 0,
 			conflict_lit : VecDeque::new(),
 			tmp_conflict_lit : VecDeque::new(),
-			conflict_clause : Vec::new()
+			conflict_clause : None,
+            conflict_clause_ind : 0
 		};
 		//TODO initialize fields
 		ret
@@ -123,7 +125,7 @@ impl<'w> CnfManager<'w> {
 		self.vars[VAR(&lit)].decision_level = self.decision_level;
 	}
 
-	pub fn assertLiteral(&self, lit : i32, ante : &Vec<i32>) -> bool {
+	pub fn assertLiteral(&self, lit : i32, ante : Option<&Vec<i32>>, ante_ind : i32) -> bool {
 		//TODO implement
 		false
 	}
@@ -133,10 +135,11 @@ impl<'w> CnfManager<'w> {
 		false
 	}
 
-	pub fn decide(&self, lit : i32) -> bool {
-		//TODO implement
-		false
-	}
+	pub fn decide(&mut self, lit : i32) -> bool {
+        self.decision_count += 1;
+        self.decision_level += 1;
+        return self.assertLiteral(lit, None, 0);
+    }
 
 	pub fn learnClause(&self, first_lit : &Vec<i32>) -> () {
 		//TODO implement
@@ -147,8 +150,7 @@ impl<'w> CnfManager<'w> {
 	}
 
 	pub fn assertCL(&self) -> bool {
-		//TODO implement
-		false
+		return self.assertLiteral(self.conflict_clause.unwrap()[0], self.conflict_clause, self.conflict_clause_ind+1);
 	}
 
 	pub fn backtrack(&self, level : i32) -> () {
