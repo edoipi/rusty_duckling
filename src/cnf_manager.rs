@@ -45,6 +45,7 @@ pub struct Variable<'w> {
 	pub value : VA,
 	pub decision_level : i32,
 	pub ante : Option<&'w Vec<i32>>,
+	pub ante_ind : usize,
 	pub activity : [i32; 2],
 	pub bin_imp : [Vec<i32>; 2],
 	pub watch : [Vec<Vec<i32>>; 2]
@@ -58,6 +59,7 @@ impl<'w> Variable<'w> {
 			value : VA::Free,
 			decision_level : 0,
 			ante : None,
+			ante_ind : 0,
 			activity : [0, 0],
 			bin_imp : [Vec::new(), Vec::new()],
 			watch : [Vec::new(), Vec::new()]
@@ -114,8 +116,11 @@ impl<'w> CnfManager<'w> {
 		ret
 	}
 
-	pub fn setLiteral(&self, lit : i32, ante : &Vec<i32>) -> () {
-		//TODO implement
+	pub fn setLiteral(&mut self, lit : i32, ante : &'w Vec<i32>, ind : usize) -> () {
+		self.vars[VAR(&lit)].value = SIGN(&lit);
+		self.vars[VAR(&lit)].ante = Some(ante);
+		self.vars[VAR(&lit)].ante_ind = ind;
+		self.vars[VAR(&lit)].decision_level = self.decision_level;
 	}
 
 	pub fn assertLiteral(&self, lit : i32, ante : &Vec<i32>) -> bool {
