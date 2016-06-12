@@ -285,7 +285,8 @@ void CnfManager::learnClause(int *first) {
     for (it = tmpConflictLits.begin(); it != tmpConflictLits.end(); it++) {
         bool redundant = true;
         int *ante = vars[VAR(*it)].ante;
-        if (ante == NULL) redundant = false;
+        if (ante == NULL)
+            redundant = false;
         else
             for (; *ante; ante++)
                 if (!vars[VAR(*ante)].mark) {

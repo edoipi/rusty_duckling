@@ -203,8 +203,118 @@ impl<'w> CnfManager<'w> {
         return self.assertLiteral(lit, None, 0);
     }
 
-	pub fn learnClause(&self, first_lit : &Vec<i32>) -> () {
+	pub fn learnClause(&'w mut self, conflict_clause : &Vec<i32>, mut ind : usize) -> () {
 		//TODO implement
+		if self.decision_level == 1 {
+			self.assertion_level = 0;
+			return;
+		}
+
+		self.updateScores(conflict_clause, ind);
+
+		self.conflict_lit.clear();
+		self.tmp_conflict_lit.clear();
+		let mut cur_level_lits = 0;
+		while conflict_clause[ind] != 0 {
+			let lit = conflict_clause[ind];
+			ind += 1;
+			if self.vars[VAR(&lit)].decision_level == 1 {
+				continue;
+			}
+			if self.vars[VAR(&lit)].decision_level < self.decision_level {
+				self.tmp_conflict_lit.push_back(lit);
+			} else {
+				cur_level_lits += 1;
+			}
+			self.vars[VAR(&lit)].uip_mark = true;
+		}
+
+		let mut lit = 0;
+		loop {
+			lit = *self.decision_stack.last().unwrap();
+			self.decision_stack.pop();
+			let var = VAR(&lit);
+			self.vars[var].value = VA::Free;
+			if !self.vars[var].uip_mark {
+				if self.var_position[var] < self.next_var {
+					self.next_var = self.var_position[var];
+				}
+				continue;
+			}
+
+			self.vars[var].uip_mark = false;
+			match self.vars[var].ante {
+				Some(ante) => {
+					let self2 = unsafe {&mut *(self as *mut CnfManager)};
+					self.updateScores(ante, self2.vars[var].ante_ind - 1)
+				},
+				None => (),
+			}
+
+			if self.var_position[var] < self.next_var {
+				self.next_var = self.var_position[var];
+			}
+
+			if cur_level_lits == 1 {
+				cur_level_lits -= 1;
+				break;
+			}
+
+			match self.vars[var].ante {
+				Some(ante) => {
+					let mut z = self.vars[var].ante_ind;
+					while ante[z] != 0 {
+						let v = ante[z];
+						z += 1;
+						if self.vars[VAR(&v)].uip_mark || self.vars[VAR(&v)].decision_level == 1 {
+							continue;
+						}
+						if self.vars[VAR(&v)].decision_level < self.decision_level {
+							self.tmp_conflict_lit.push_back(v);
+						} else {
+							cur_level_lits += 1;
+						}
+						self.vars[VAR(&v)].uip_mark = true;
+					}
+				},
+				None => (),
+			}
+		}
+
+		self.assertion_level = 1;
+		for conf_lit in self.tmp_conflict_lit.iter() {
+			let mut redundant = true;
+			match self.vars[VAR(conf_lit)].ante {
+				Some(ante) => {
+					let mut z = self.vars[VAR(conf_lit)].ante_ind;
+					while ante[z] != 0 {
+						if !self.vars[VAR(&ante[z])].uip_mark {
+							redundant = false;
+							break;
+						}
+						z += 1;
+					}
+				},
+				None => {
+					redundant = false;
+				},
+			}
+			if !redundant {
+				if self.vars[VAR(conf_lit)].decision_level > self.assertion_level {
+					self.assertion_level = self.vars[VAR(conf_lit)].decision_level;
+					self.conflict_lit.push_front(conf_lit.clone());
+				} else {
+					self.conflict_lit.push_back(conf_lit.clone());
+				}
+			}
+		}
+
+		for tlit in self.tmp_conflict_lit.iter() {
+			self.vars[VAR(tlit)].uip_mark = false;
+		}
+
+		self.conflict_lit.push_back(-lit);
+		self.addClause();
 	}
 
 	pub fn addClause(&'w mut self) -> () {
