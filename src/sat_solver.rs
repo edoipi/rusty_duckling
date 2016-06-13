@@ -26,16 +26,16 @@ impl Luby {
 	}
 }
 
-pub struct SatSolver<'w> {
-	pub cnf_manager : CnfManager<'w>,
+pub struct SatSolver {
+	pub cnf_manager : CnfManager,
 	pub luby : Luby,
 	pub luby_unit : i32,
 	pub next_decay : i32,
 	pub next_restart : i32
 }
 
-impl<'w> SatSolver<'w> {
-	pub fn new(cnf: &Cnf) -> SatSolver<'w> {
+impl<'w> SatSolver {
+	pub fn new(cnf: &Cnf) -> SatSolver {
 		let mut ret = SatSolver {
 			cnf_manager : CnfManager::new(cnf),
 			luby : Luby::new(),
@@ -54,9 +54,9 @@ impl<'w> SatSolver<'w> {
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
 			if ret.cnf_manager.vars[i].value == VA::Free {
 				if ret.cnf_manager.vars[i].activity[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Neg as usize] > 0 {
-					ret.cnf_manager.assertLiteral(-(i as i32), None, 0);
+					ret.cnf_manager.assertLiteral(-(i as i32), ArrTuple::new(), 0);
 				} else if ret.cnf_manager.vars[i].activity[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Pos as usize] > 0 {
-					ret.cnf_manager.assertLiteral((i as i32), None, 0);
+					ret.cnf_manager.assertLiteral((i as i32), ArrTuple::new(), 0);
 				}
 			}
 		}

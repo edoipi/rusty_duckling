@@ -39,27 +39,67 @@ pub fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
 	m.vars[var as usize].activity[0] + m.vars[var as usize].activity[1]
 }
 
+//pub fn IMPLIST(&lit : &i32, m : &CnfManager) -> &Vec<i32> {
+//	m.vars[VAR(&lit)].bin_imp[SIGN(&lit) as usize]
+//}
 
-pub struct Variable<'w> {
+//pub fn WATCHLIST(&lit : &'w i32, m : &CnfManager) -> &'w Vec<usize> {
+//	m.vars[VAR(&lit)].watch[SIGN(&lit) as usize]
+//}
+
+#[derive(Clone)]
+pub struct ArrTuple {
+	pub is_null: bool,
+	pub is_lit_pool: bool,
+	pub var_index: usize,
+	pub positive: usize
+}
+
+impl ArrTuple {
+	pub fn new() -> ArrTuple {
+		ArrTuple {
+			is_null: true,
+			is_lit_pool: false,
+			var_index: 1000,
+			positive: 1000,
+		}
+	}
+
+	pub fn ctor(islp : bool) -> ArrTuple {
+		let mut nt = ArrTuple::new();
+		nt.is_null = false;
+		nt.is_lit_pool = islp;
+		nt
+	}
+
+	pub fn ctor2(vari : usize, pos : usize) -> ArrTuple {
+		let mut nt = ArrTuple::ctor(false);
+		nt.var_index = vari;
+		nt.positive = pos;
+		nt
+	}
+}
+
+pub struct Variable {
 	pub uip_mark : bool,
 	pub phase : bool,
 	pub value : VA,
 	pub decision_level : i32,
-	pub ante : Option<&'w Vec<i32>>,
+	pub ante : ArrTuple,
 	pub ante_ind : usize,
 	pub activity : [i32; 2],
 	pub bin_imp : [Vec<i32>; 2],
 	pub watch : [Vec<usize>; 2]
 }
 
-impl<'w> Variable<'w> {
-	pub fn new() -> Variable<'w> {
+impl Variable {
+	pub fn new() -> Variable {
 		Variable {
 			uip_mark : false,
 			phase : false,
 			value : VA::Free,
 			decision_level : 0,
-			ante : None,
+			ante : ArrTuple::new(),
 			ante_ind : 0,
 			activity : [0, 0],
 			bin_imp : [Vec::new(), Vec::new()],
@@ -68,9 +108,9 @@ impl<'w> Variable<'w> {
 	}
 }
 
-pub struct CnfManager<'w> {
+pub struct CnfManager {
 	pub var_count : i32,
-	pub vars : Vec<Variable<'w>>,
+	pub vars : Vec<Variable>,
 	pub var_order : Vec<i32>,
 	pub var_position : Vec<i32>,
 	pub next_var : i32,
@@ -91,8 +131,8 @@ pub struct CnfManager<'w> {
     pub conflict_clause_ind : usize
 }
 
-impl<'w> CnfManager<'w> {
-	pub fn new(cnf : &Cnf) -> CnfManager<'w> {
+impl CnfManager {
+	pub fn new(cnf : &Cnf) -> CnfManager {
 		let mut ret = CnfManager {
 			var_count : cnf.var_count,
 			vars : Vec::new(),
@@ -130,7 +170,7 @@ impl<'w> CnfManager<'w> {
 				let lit = cnf.clauses[i][0];
 				if FREE(&lit, &ret) {
 					ret.decision_stack.push(lit);
-					ret.setLiteral(lit, None, 0);
+					ret.setLiteral(lit, ArrTuple::new(), 0);
 				} else if RESOLVED(&lit, &ret) {
 					println!("UNSAT");
 					exit(0);
@@ -171,15 +211,21 @@ impl<'w> CnfManager<'w> {
 		ret
 	}
 
-	pub fn setLiteral(&mut self, lit : i32, ante : Option<&'w Vec<i32>>, ind : usize) -> () {
+	pub fn setLiteral(&mut self, lit : i32, ante : ArrTuple, ind : usize) -> () {
 		self.vars[VAR(&lit)].value = SIGN(&lit);
 		self.vars[VAR(&lit)].ante = ante;
 		self.vars[VAR(&lit)].ante_ind = ind;
 		self.vars[VAR(&lit)].decision_level = self.decision_level;
 	}
 
-	pub fn assertLiteral(&self, lit : i32, ante : Option<&Vec<i32>>, ante_ind : usize) -> bool {
-		//TODO implement
+	pub fn assertLiteral(&mut self, lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
+		
+		let mut new_stack : Vec<i32> = Vec::new();
+		let mut new_stack_id = 0;
+
+		new_stack.push(lit);
+		self.setLiteral(lit, ante, ante_ind);
+
 		false
 	}
 
@@ -187,9 +233,12 @@ impl<'w> CnfManager<'w> {
 		let mut lit : i32 = *(self.decision_stack.last().unwrap());
 		while lit != 0 {
 			self.decision_stack.pop();
-			if !self.assertLiteral(lit, Some(&self.lit_pool), self.lit_pool.len() - 1) {
+
+			let self2 = unsafe {&mut *(self as *mut CnfManager)};
+
+			if !self2.assertLiteral(lit, ArrTuple::ctor(true), &self.lit_pool.len().clone() - 1) {
 				let level = self.decision_level - 1;
-				self.backtrack(level);
+				self2.backtrack(level);
 				return false;
 			}
 			lit = *(self.decision_stack.last().unwrap());
@@ -200,16 +249,28 @@ impl<'w> CnfManager<'w> {
 	pub fn decide(&mut self, lit : i32) -> bool {
         self.decision_count += 1;
         self.decision_level += 1;
-        return self.assertLiteral(lit, None, 0);
+        return self.assertLiteral(lit, ArrTuple::new(), 0);
     }
 
-	pub fn learnClause(&'w mut self, conflict_clause : &Vec<i32>, mut ind : usize) -> () {
+	pub fn learnClause(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
+
+		let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		let self3 = unsafe {&mut *(self as *mut CnfManager)};
+		let self4 = unsafe {&mut *(self as *mut CnfManager)};
+
+		let mut conflict_clause = 
+			if tuple.is_lit_pool {
+				&self.lit_pool
+			} else {
+				&self.vars[tuple.var_index].bin_imp[tuple.positive]
+			};
+
 		if self.decision_level == 1 {
 			self.assertion_level = 0;
 			return;
 		}
 
-		self.updateScores(conflict_clause, ind);
+		self2.updateScores(tuple.clone(), ind);
 
 		self.conflict_lit.clear();
 		self.tmp_conflict_lit.clear();
@@ -225,7 +286,7 @@ impl<'w> CnfManager<'w> {
 			} else {
 				cur_level_lits += 1;
 			}
-			self.vars[VAR(&lit)].uip_mark = true;
+			self2.vars[VAR(&lit)].uip_mark = true;
 		}
 
 		let mut lit = 0;
@@ -233,7 +294,7 @@ impl<'w> CnfManager<'w> {
 			lit = *self.decision_stack.last().unwrap();
 			self.decision_stack.pop();
 			let var = VAR(&lit);
-			self.vars[var].value = VA::Free;
+			self2.vars[var].value = VA::Free;
 			if !self.vars[var].uip_mark {
 				if self.var_position[var] < self.next_var {
 					self.next_var = self.var_position[var];
@@ -241,14 +302,11 @@ impl<'w> CnfManager<'w> {
 				continue;
 			}
 
-			self.vars[var].uip_mark = false;
-			match self.vars[var].ante {
-				Some(ante) => {
-					let self2 = unsafe {&mut *(self as *mut CnfManager)};
-					self.updateScores(ante, self2.vars[var].ante_ind - 1)
-				},
-				None => (),
+			self2.vars[var].uip_mark = false;
+			if self.vars[var].ante.is_null == false {
+				self2.updateScores(self3.vars[var].ante.clone(), self4.vars[var].ante_ind - 1)
 			}
+
 
 			if self.var_position[var] < self.next_var {
 				self.next_var = self.var_position[var];
@@ -259,45 +317,57 @@ impl<'w> CnfManager<'w> {
 				break;
 			}
 
-			match self.vars[var].ante {
-				Some(ante) => {
-					let mut z = self.vars[var].ante_ind;
-					while ante[z] != 0 {
-						let v = ante[z];
-						z += 1;
-						if self.vars[VAR(&v)].uip_mark || self.vars[VAR(&v)].decision_level == 1 {
-							continue;
-						}
-						if self.vars[VAR(&v)].decision_level < self.decision_level {
-							self.tmp_conflict_lit.push_back(v);
-						} else {
-							cur_level_lits += 1;
-						}
-						self.vars[VAR(&v)].uip_mark = true;
+
+			let x = &self.vars[var].ante;
+			if x.is_null == false { 
+				let mut z = self.vars[var].ante_ind;
+
+				let mut ante = 
+					if x.is_lit_pool {
+						&self.lit_pool
+					} else {
+						&self.vars[x.var_index].bin_imp[x.positive]
+					};
+
+				while ante[z] != 0 {
+					let v = ante[z];
+					z += 1;
+					if self.vars[VAR(&v)].uip_mark || self.vars[VAR(&v)].decision_level == 1 {
+						continue;
 					}
-				},
-				None => (),
+					if self.vars[VAR(&v)].decision_level < self.decision_level {
+						self.tmp_conflict_lit.push_back(v);
+					} else {
+						cur_level_lits += 1;
+					}
+					self2.vars[VAR(&v)].uip_mark = true;
+				}
 			}
 		}
 
 		self.assertion_level = 1;
 		for conf_lit in self.tmp_conflict_lit.iter() {
 			let mut redundant = true;
-			match self.vars[VAR(conf_lit)].ante {
-				Some(ante) => {
-					let mut z = self.vars[VAR(conf_lit)].ante_ind;
-					while ante[z] != 0 {
-						if !self.vars[VAR(&ante[z])].uip_mark {
-							redundant = false;
-							break;
-						}
-						z += 1;
+			let x = &self.vars[VAR(conf_lit)].ante;
+			if x.is_null == false {
+				let ante = 
+					if tuple.is_lit_pool {
+						&self.lit_pool
+					} else {
+						&self.vars[tuple.var_index].bin_imp[tuple.positive]
+					};
+				let mut z = self.vars[VAR(conf_lit)].ante_ind;
+				while ante[z] != 0 {
+					if !self.vars[VAR(&ante[z])].uip_mark {
+						redundant = false;
+						break;
 					}
-				},
-				None => {
-					redundant = false;
-				},
+					z += 1;
+				}
+			} else {
+				redundant = false;
 			}
+
 			if !redundant {
 				if self.vars[VAR(conf_lit)].decision_level > self.assertion_level {
 					self.assertion_level = self.vars[VAR(conf_lit)].decision_level;
@@ -309,14 +379,14 @@ impl<'w> CnfManager<'w> {
 		}
 
 		for tlit in self.tmp_conflict_lit.iter() {
-			self.vars[VAR(tlit)].uip_mark = false;
+			self2.vars[VAR(tlit)].uip_mark = false;
 		}
 
-		self.conflict_lit.push_back(-lit);
-		self.addClause();
+		self2.conflict_lit.push_back(-lit);
+		self2.addClause();
 	}
 
-	pub fn addClause(&'w mut self) -> () {
+	pub fn addClause(& mut self) -> () {
 		self.conflict_clause_ind = self.lit_pool.len();
 		self.lit_pool.push(*self.conflict_lit.back().unwrap());
 		if self.conflict_lit.len() > 1 {
@@ -334,8 +404,10 @@ impl<'w> CnfManager<'w> {
 		self.lit_pool.push(0);
 	}
 
-	pub fn assertCL(&self) -> bool {
-		return self.assertLiteral(self.lit_pool[self.conflict_clause_ind], Some(&self.lit_pool), self.conflict_clause_ind+1);
+	pub fn assertCL(&mut self) -> bool {
+		let ind = self.conflict_clause_ind.clone();
+		let lit = self.lit_pool[ind].clone();
+		return self.assertLiteral(lit, ArrTuple::ctor(true), ind + 1);
 	}
 
 	pub fn backtrack(&mut self, level : i32) -> () {
@@ -362,11 +434,19 @@ impl<'w> CnfManager<'w> {
 		}
 	}
 
-	pub fn updateScores(&mut self, vec : &Vec<i32>, mut ind : usize) -> () {
+	pub fn updateScores(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
+		let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		let mut vec = 
+			if tuple.is_lit_pool {
+				&self.lit_pool
+			} else {
+				&self.vars[tuple.var_index].bin_imp[tuple.positive]
+			};
+
 		while vec[ind] != 0 {
 			let lit = &vec[ind];
 			let v = VAR(lit);
-			self.vars[v].activity[SIGN(lit) as usize] += 1;
+			self2.vars[v].activity[SIGN(lit) as usize] += 1;
 			let pos = self.var_position[v];
 			ind += 1;
 
