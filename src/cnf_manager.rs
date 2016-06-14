@@ -218,15 +218,107 @@ impl CnfManager {
 		self.vars[VAR(&lit)].decision_level = self.decision_level;
 	}
 
-	pub fn assertLiteral(&mut self, lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
+	pub fn assertLiteral(&mut self, mut lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
 		
+		let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		let self3 = unsafe {&mut *(self as *mut CnfManager)};
+
 		let mut new_stack : Vec<i32> = Vec::new();
-		let mut new_stack_id = 0;
+		let mut new_stack_it = 0;
 
 		new_stack.push(lit);
 		self.setLiteral(lit, ante, ante_ind);
 
-		false
+		while new_stack_it < new_stack.len() {
+			lit = NEG(&new_stack[new_stack_it]);
+			new_stack_it += 1;
+			self.decision_stack.push(-lit);
+
+			let mut imp_ind = 3;
+			{
+			let imp = &mut self2.vars[VAR(&lit)].bin_imp[SIGN(&lit) as usize];
+			while imp_ind < imp.len() {
+				let imp_lit = imp[imp_ind];
+				if FREE(&imp_lit, &self) {
+					new_stack.push(imp_lit);
+					self3.setLiteral(imp_lit, ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 1);
+				} else if RESOLVED(&imp_lit, &self) {
+					self3.conflict_count += 1;
+					while new_stack_it < new_stack.len() {
+						self3.decision_stack.push(new_stack[new_stack_it]);
+						new_stack_it += 1;
+					}
+					imp[0] = imp_lit;
+					self3.learnClause(ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 0);
+					return false;
+				}
+				imp_ind += 1;
+			}}
+
+			let watchlist = &mut self2.vars[VAR(&lit)].watch[SIGN(&lit) as usize];
+			let mut it = 0;
+			while it < watchlist.len() {
+				let first = watchlist[it];
+				let mut watch;
+				let mut other_watch;
+				if self.lit_pool[first] == lit {
+					watch = first;
+					other_watch = first + 1;
+				} else {
+					watch = first + 1;
+					other_watch = first;
+				}
+
+				if SET(&self.lit_pool[other_watch], &self) {
+					it += 1;
+					continue;
+				}
+
+				let mut p = first + 2;
+				let mut found = true;
+				while RESOLVED(&self.lit_pool[p], &self) {
+					p += 1;
+				}
+				if self.lit_pool[p] == 0 {
+					found = false;
+				}
+
+				if found {
+					let plit = self.lit_pool[p];
+					self.vars[VAR(&plit)].watch[SIGN(&plit) as usize].push(first);
+
+					watchlist[it] = watchlist.last().unwrap().clone();
+					watchlist.pop();
+					it -= 1;
+
+					let x = self.lit_pool[watch];
+					self.lit_pool[watch] = self.lit_pool[p];
+					self.lit_pool[p] = x;
+				} else {
+					let olit = self.lit_pool[other_watch];
+					if FREE(&olit, &self) {
+						new_stack.push(olit);
+						self.setLiteral(olit, ArrTuple::ctor(true), first + 1);
+
+						if other_watch != first {
+							let x = self.lit_pool[other_watch];
+							self.lit_pool[other_watch] = self.lit_pool[first];
+							self.lit_pool[first] = x;
+						}
+					} else if RESOLVED(&olit, &self) {
+						self.conflict_count += 1;
+						while new_stack_it < new_stack.len() {
+							self.decision_stack.push(new_stack[new_stack_it]);
+							new_stack_it += 1;
+						}
+						self.learnClause(ArrTuple::ctor(true), first);
+						return false;
+					}
+				}
+				it += 1;
+			}
+		}
+		true
 	}
 
 	pub fn assertUnitClauses(&mut self) -> bool {
