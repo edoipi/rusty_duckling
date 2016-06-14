@@ -86,6 +86,7 @@ impl<'w> SatSolver {
 	}
 
 	pub fn selectLiteral(& mut self) -> i32 {
+		println!("selectLiteral");
 		let mut x = 0 as i32;
 		let last_clause = if self.cnf_manager.next_clause > 256 {
 			self.cnf_manager.next_clause - 256
