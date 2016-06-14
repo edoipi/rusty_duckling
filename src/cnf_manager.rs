@@ -118,7 +118,7 @@ pub struct CnfManager {
 	pub lit_pool : Vec<i32>,
 	pub lit_pool_size_orig : usize,
 	pub clauses : Vec<usize>,
-	pub next_clause : usize,
+	pub next_clause : i32,
 
 	pub decision_stack : Vec<i32>,
 	pub assertion_level : i32,
