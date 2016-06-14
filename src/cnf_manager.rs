@@ -219,7 +219,7 @@ impl CnfManager {
 	}
 
 	pub fn assertLiteral(&mut self, mut lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
-		
+		println!("assertLiteral for lit {}, ante_ind {}", lit, ante_ind);
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let self3 = unsafe {&mut *(self as *mut CnfManager)};
 
@@ -233,6 +233,7 @@ impl CnfManager {
 			lit = NEG(&new_stack[new_stack_it]);
 			new_stack_it += 1;
 			self.decision_stack.push(-lit);
+			println!("pushed {}", -lit);
 
 			let mut imp_ind = 3;
 			{
@@ -243,6 +244,7 @@ impl CnfManager {
 					new_stack.push(imp_lit);
 					self3.setLiteral(imp_lit, ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 1);
 				} else if RESOLVED(&imp_lit, &self) {
+					println!("bin fuckup, stack {}", self.decision_stack.len());
 					self3.conflict_count += 1;
 					while new_stack_it < new_stack.len() {
 						self3.decision_stack.push(new_stack[new_stack_it]);
@@ -345,7 +347,7 @@ impl CnfManager {
     }
 
 	pub fn learnClause(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
-
+		println!("learnClause {}", ind);
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let self3 = unsafe {&mut *(self as *mut CnfManager)};
 		let self4 = unsafe {&mut *(self as *mut CnfManager)};
@@ -383,6 +385,7 @@ impl CnfManager {
 
 		let mut lit = 0;
 		loop {
+			println!("popped");
 			lit = self.decision_stack.last().unwrap().clone();
 			self.decision_stack.pop();
 			let var = VAR(&lit);

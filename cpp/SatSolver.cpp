@@ -36,6 +36,7 @@ SatSolver::SatSolver(Cnf &cnf) : CnfManager(cnf) {
     sort(varOrder, varOrder + nVars, [&](unsigned a, unsigned b) -> bool { return SCORE(a) > SCORE(b); });
     for (unsigned i = 0; i < nVars; i++) varPosition[varOrder[i]] = i;
     nextVar = 0;
+    printf("next clause: %d\n", clauses.size() - 1);
     nextClause = clauses.size() - 1;
 }
 

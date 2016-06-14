@@ -167,6 +167,7 @@ impl<'w> SatSolver {
 		}
 		let mut lit = self.selectLiteral();
 		while lit != 0 {
+			println!("selected literal: {}", lit);
 			if !self.cnf_manager.decide(lit) {
 				loop {
 					if self.cnf_manager.assertion_level == 0 {
