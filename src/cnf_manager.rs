@@ -230,7 +230,7 @@ impl CnfManager {
 	}
 
 	pub fn assertUnitClauses(&mut self) -> bool {
-		let mut lit : i32 = *(self.decision_stack.last().unwrap());
+		let mut lit : i32 = self.decision_stack.last().unwrap().clone();
 		while lit != 0 {
 			self.decision_stack.pop();
 
@@ -241,7 +241,7 @@ impl CnfManager {
 				self2.backtrack(level);
 				return false;
 			}
-			lit = *(self.decision_stack.last().unwrap());
+			lit = self.decision_stack.last().unwrap().clone();
 		}
 		true
 	}
@@ -291,7 +291,7 @@ impl CnfManager {
 
 		let mut lit = 0;
 		loop {
-			lit = *self.decision_stack.last().unwrap();
+			lit = self.decision_stack.last().unwrap().clone();
 			self.decision_stack.pop();
 			let var = VAR(&lit);
 			self2.vars[var].value = VA::Free;
@@ -388,10 +388,10 @@ impl CnfManager {
 
 	pub fn addClause(& mut self) -> () {
 		self.conflict_clause_ind = self.lit_pool.len();
-		self.lit_pool.push(*self.conflict_lit.back().unwrap());
+		self.lit_pool.push(self.conflict_lit.back().unwrap().clone());
 		if self.conflict_lit.len() > 1 {
 			self.clauses.push(self.conflict_clause_ind);
-			self.lit_pool.push(*self.conflict_lit.front().unwrap());
+			self.lit_pool.push(self.conflict_lit.front().unwrap().clone());
 			let back_lit = self.conflict_lit.back().unwrap();
 			self.vars[VAR(back_lit)].watch[SIGN(back_lit) as usize].push(self.conflict_clause_ind);
 			let front_lit = self.conflict_lit.front().unwrap();
