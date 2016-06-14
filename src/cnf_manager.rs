@@ -212,7 +212,7 @@ impl CnfManager {
 	}
 
 	pub fn setLiteral(&mut self, lit : i32, ante : ArrTuple, ind : usize) -> () {
-		println!("Set literal {}", lit);
+		//println!("Set literal {}", lit);
 		self.vars[VAR(&lit)].value = SIGN(&lit);
 		self.vars[VAR(&lit)].ante = ante;
 		self.vars[VAR(&lit)].ante_ind = ind;
@@ -220,7 +220,7 @@ impl CnfManager {
 	}
 
 	pub fn assertLiteral(&mut self, mut lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
-		println!("assertLiteral for lit {}, ante_ind {}", lit, ante_ind);
+		//println!("assertLiteral for lit {}, ante_ind {}", lit, ante_ind);
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let self3 = unsafe {&mut *(self as *mut CnfManager)};
 
@@ -234,23 +234,23 @@ impl CnfManager {
 			lit = NEG(&new_stack[new_stack_it]);
 			new_stack_it += 1;
 			self.decision_stack.push(-lit);
-			println!("pushed {}", -lit);
+			//println!("pushed {}", -lit);
 
 			let mut imp_ind = 3;
 			{
 			let imp = &mut self2.vars[VAR(&lit)].bin_imp[SIGN(&lit) as usize];
 			while imp_ind < imp.len() {
 				let imp_lit = imp[imp_ind];
-				println!("assert while {}", imp_lit);
+				//println!("assert while {}", imp_lit);
 				if FREE(&imp_lit, &self) {
-					println!("FREE");
+					//println!("FREE");
 					if imp_lit == 0 {
 						break;
 					}
 					new_stack.push(imp_lit);
 					self3.setLiteral(imp_lit, ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 1);
 				} else if RESOLVED(&imp_lit, &self) {
-					println!("bin fuckup, stack {}", self.decision_stack.len());
+					//println!("bin fuckup, stack {}", self.decision_stack.len());
 					self3.conflict_count += 1;
 					while new_stack_it < new_stack.len() {
 						self3.decision_stack.push(new_stack[new_stack_it]);
@@ -330,7 +330,7 @@ impl CnfManager {
 	}
 
 	pub fn assertUnitClauses(&mut self) -> bool {
-		println!("assertUnitClauses");
+		//println!("assertUnitClauses");
 		let mut lit : i32 = self.decision_stack.last().unwrap().clone();
 		while lit != 0 {
 			self.decision_stack.pop();
@@ -348,14 +348,14 @@ impl CnfManager {
 	}
 
 	pub fn decide(&mut self, lit : i32) -> bool {
-		println!("decide {}", lit);
+		//println!("decide {}", lit);
         self.decision_count += 1;
         self.decision_level += 1;
         return self.assertLiteral(lit, ArrTuple::new(), 0);
     }
 
 	pub fn learnClause(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
-		println!("learnClause {}", ind);
+		//println!("learnClause {}", self.decision_level);
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let self3 = unsafe {&mut *(self as *mut CnfManager)};
 		let self4 = unsafe {&mut *(self as *mut CnfManager)};
@@ -414,7 +414,7 @@ impl CnfManager {
 				self.next_var = self.var_position[var];
 			}
 
-			println!("curLevelLits {}", cur_level_lits);
+			//println!("curLevelLits {}", cur_level_lits);
 			if cur_level_lits == 1 {
 				cur_level_lits -= 1;
 				break;
@@ -491,7 +491,7 @@ impl CnfManager {
 	}
 
 	pub fn addClause(& mut self) -> () {
-		println!("addClause");
+		//println!("addClause");
 		self.conflict_clause_ind = self.lit_pool.len();
 		self.lit_pool.push(self.conflict_lit.back().unwrap().clone());
 		if self.conflict_lit.len() > 1 {
@@ -510,14 +510,14 @@ impl CnfManager {
 	}
 
 	pub fn assertCL(&mut self) -> bool {
-		println!("assertCL");
+		//println!("assertCL");
 		let ind = self.conflict_clause_ind.clone();
 		let lit = self.lit_pool[ind].clone();
 		return self.assertLiteral(lit, ArrTuple::ctor(true), ind + 1);
 	}
 
 	pub fn backtrack(&mut self, level : i32) -> () {
-		println!("backtrack {}", level);
+		//println!("backtrack {}", level);
 		let mut var = VAR(self.decision_stack.last().unwrap());
 		while self.vars[var].decision_level > level {
 			if self.vars[var].decision_level < self.decision_level {
@@ -535,7 +535,7 @@ impl CnfManager {
 	}
 
 	pub fn scoreDecay(&mut self) -> () {
-		println!("scoreDecay");
+		//println!("scoreDecay");
 		for i in 1..(self.var_count + 1) as usize {
 			self.vars[i].activity[0] >>= 1;
 			self.vars[i].activity[1] >>= 1;
@@ -543,7 +543,7 @@ impl CnfManager {
 	}
 
 	pub fn updateScores(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
-		println!("updateScores");
+		//println!("updateScores");
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let mut vec = 
 			if tuple.is_lit_pool {

@@ -86,7 +86,7 @@ impl<'w> SatSolver {
 	}
 
 	pub fn selectLiteral(& mut self) -> i32 {
-		println!("selectLiteral");
+		//println!("selectLiteral");
 		let mut x = 0 as i32;
 		let last_clause = if self.cnf_manager.next_clause > 256 {
 			self.cnf_manager.next_clause - 256
@@ -163,14 +163,16 @@ impl<'w> SatSolver {
 	}
 
 	pub fn run(&mut self) -> bool {
+		//println!("run {}", self.cnf_manager.decision_level);
 		if self.cnf_manager.decision_level == 0 {
 			return false;
 		}
 		let mut lit = self.selectLiteral();
 		while lit != 0 {
-			println!("selected literal: {}", lit);
+			//println!("selected literal: {}", lit);
 			if !self.cnf_manager.decide(lit) {
 				loop {
+					//println!("aLevel {}", self.cnf_manager.assertion_level);
 					if self.cnf_manager.assertion_level == 0 {
 						return false;
 					}
@@ -194,7 +196,7 @@ impl<'w> SatSolver {
 						self.cnf_manager.backtrack(level);
 					}
 
-					if !self.cnf_manager.assertCL() {
+					if self.cnf_manager.assertCL() {
 						break;
 					}
 				}
