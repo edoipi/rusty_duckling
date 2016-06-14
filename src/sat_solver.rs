@@ -1,6 +1,7 @@
 use Cnf;
 use cnf_manager::*;
 use std::iter::*;
+use std::process::exit;
 
 pub struct Luby {
 	pub seq : Vec<i32>,
@@ -203,12 +204,17 @@ impl<'w> SatSolver {
 			}
 			lit = self.selectLiteral();
 		}
+		if !self.verifySolution() {
+			println!("ERROR");
+			exit(0);
+		}
 		true
 	}
 
 	pub fn verifySolution(&self) -> bool {
 		let ref pool = self.cnf_manager.lit_pool;
-		for mut i in 0..self.cnf_manager.lit_pool_size_orig as usize {
+		let mut i = 0;
+		while i < self.cnf_manager.lit_pool_size_orig {
 			let mut satisfied = false;
 			while pool[i] != 0 {
 				let ref lit = pool[i];
@@ -221,6 +227,7 @@ impl<'w> SatSolver {
 					break;
 				}
 			}
+			i += 1;
 			if !satisfied {
 				return false;
 			}

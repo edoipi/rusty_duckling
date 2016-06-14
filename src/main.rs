@@ -18,6 +18,7 @@ fn main() {
 		} else {
 			println!("UNSAT");
 		}
+		//sat_solver.printStats();
 	}
 }
 

@@ -191,6 +191,7 @@ impl CnfManager {
 					ret.vars[VAR(j)].activity[SIGN(j) as usize] += 1;
 					ret.lit_pool.push(j.clone());
 				}
+				ret.lit_pool.push(0);
 			}
 		}
 		ret.lit_pool_size_orig = ret.lit_pool.len();
@@ -264,9 +265,9 @@ impl CnfManager {
 			}}
 
 			let watchlist = &mut self2.vars[VAR(&lit)].watch[SIGN(&lit) as usize];
-			let mut it = 0;
-			while it < watchlist.len() {
-				let first = watchlist[it];
+			let mut it : i32 = 0;
+			while it < watchlist.len() as i32 {
+				let first = watchlist[it as usize];
 				let mut watch;
 				let mut other_watch;
 				if self.lit_pool[first] == lit {
@@ -295,7 +296,7 @@ impl CnfManager {
 					let plit = self.lit_pool[p];
 					self.vars[VAR(&plit)].watch[SIGN(&plit) as usize].push(first);
 
-					watchlist[it] = watchlist.last().unwrap().clone();
+					watchlist[it as usize] = watchlist.last().unwrap().clone();
 					watchlist.pop();
 					it -= 1;
 
