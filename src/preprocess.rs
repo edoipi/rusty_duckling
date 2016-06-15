@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::io;
 use cnf::Cnf;
 
@@ -20,14 +19,20 @@ pub fn preprocess() -> Cnf {
     let _ = io::stdin().read_line(&mut input);
     let mut instance = Cnf {var_count: 0, clause_count: 0, clause_sum_length: 0, clauses: Vec::new()};
     {
-        let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
+        let mut iter = input.split_whitespace();
+        iter.next();
+        iter.next();
+        instance.var_count = iter.next().unwrap().parse::<i32>().unwrap();
+        instance.clause_count = iter.next().unwrap().parse::<i32>().unwrap();
+        /*let re = Regex::new("p cnf.*?([0-9]+).*?([0-9]+)").unwrap();
         match re.captures(&input) {
             Some(caps) => {
                 instance.var_count = caps[1].parse::<i32>().unwrap();
                 instance.clause_count = caps[2].parse::<i32>().unwrap();
             },
             None => panic!("Invalid input"),
-        };
+        };*/
+        
     }
     
     for _ in 0..instance.clause_count {
