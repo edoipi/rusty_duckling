@@ -1,7 +1,7 @@
-use Cnf;
-use cnf_manager::*;
 use std::iter::*;
 use std::process::exit;
+use SatInstance;
+use cnf_manager::*;
 
 pub struct Luby {
 	pub seq : Vec<i32>,
@@ -36,9 +36,9 @@ pub struct SatSolver {
 }
 
 impl SatSolver {
-	pub fn new(cnf: &Cnf) -> SatSolver {
+	pub fn new(sat_instance: &SatInstance) -> SatSolver {
 		let mut ret = SatSolver {
-			cnf_manager : CnfManager::new(cnf),
+			cnf_manager : CnfManager::new(sat_instance),
 			luby : Luby::new(),
 			luby_unit : 512,
 			next_decay : 128,

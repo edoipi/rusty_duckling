@@ -6,11 +6,11 @@ fn main() {
 	let mut input = String::new();
 	let _ = io::stdin().read_line(&mut input);
 
-	let instances_count = input.trim().parse::<i32>().unwrap();
+	let instance_count = input.trim().parse::<i32>().unwrap();
 
-	for _ in 0..instances_count {
-		let ref instance = preprocess();
-		let mut sat_solver = SatSolver::new(instance);
+	for _ in 0..instance_count {
+		let ref sat_instance = SatInstance::read();
+		let mut sat_solver = SatSolver::new(sat_instance);
 		let satisfiable = sat_solver.run();
 		if satisfiable {
 			println!("SAT");

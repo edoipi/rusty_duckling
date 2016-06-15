@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
-use Cnf;
 use std::ptr;
 use std::process::exit;
+use SatInstance;
 
 #[derive(PartialEq, Clone)]
 pub enum VA {
@@ -124,9 +124,9 @@ pub struct CnfManager {
 }
 
 impl CnfManager {
-	pub fn new(cnf : &Cnf) -> CnfManager {
+	pub fn new(sat_instance : &SatInstance) -> CnfManager {
 		let mut ret = CnfManager {
-			var_count : cnf.var_count,
+			var_count : sat_instance.var_count,
 			vars : Vec::new(),
 			var_order : Vec::new(),
 			var_position : Vec::new(),
@@ -157,9 +157,9 @@ impl CnfManager {
 		ret.vars[0].decision_level = 0;
 		ret.vars[0].value = VA::Free;
 
-		for i in 0..cnf.clause_count as usize {
-			if cnf.clauses[i].len() == 1 {
-				let lit = cnf.clauses[i][0];
+		for i in 0..sat_instance.clause_count as usize {
+			if sat_instance.clauses[i].len() == 1 {
+				let lit = sat_instance.clauses[i][0];
 				if FREE(&lit, &ret) {
 					ret.decision_stack.push(lit);
 					ret.setLiteral(lit, ArrTuple::new(), 0);
@@ -167,19 +167,19 @@ impl CnfManager {
 					println!("UNSAT");
 					exit(0);
 				}
-			} else if cnf.clauses[i].len() == 2 {
-				let lit0 = cnf.clauses[i][0];
-				let lit1 = cnf.clauses[i][1];
+			} else if sat_instance.clauses[i].len() == 2 {
+				let lit0 = sat_instance.clauses[i][0];
+				let lit1 = sat_instance.clauses[i][1];
 				imp[SIGN(&lit0) as usize][VAR(&lit0)].push(lit1);
 				imp[SIGN(&lit1) as usize][VAR(&lit1)].push(lit0);
 				ret.vars[VAR(&lit0)].activity[SIGN(&lit0) as usize] += 1;
 				ret.vars[VAR(&lit1)].activity[SIGN(&lit1) as usize] += 1;
 			} else {
-				let lit0 = cnf.clauses[i][0];
-				let lit1 = cnf.clauses[i][1];
+				let lit0 = sat_instance.clauses[i][0];
+				let lit1 = sat_instance.clauses[i][1];
 				ret.vars[VAR(&lit0)].watch[SIGN(&lit0) as usize].push(ret.lit_pool.len());
 				ret.vars[VAR(&lit1)].watch[SIGN(&lit1) as usize].push(ret.lit_pool.len());
-				for j in cnf.clauses[i].iter() {
+				for j in sat_instance.clauses[i].iter() {
 					ret.vars[VAR(j)].activity[SIGN(j) as usize] += 1;
 					ret.lit_pool.push(j.clone());
 				}
