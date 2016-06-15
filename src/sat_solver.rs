@@ -220,9 +220,4 @@ impl SatSolver {
 		}
 		println!("0");
 	}
-
-	pub fn print_stats(&self) -> () {
-		let ref m = self.cnf_manager;
-		println!("c {} decisions, {} conflicts, {} restarts", m.decision_count, m.conflict_count, m.restart_count);
-	}
 }
