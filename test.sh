@@ -2,9 +2,10 @@
 
 rm solution
 make
-./solution < test/hanoi4.cnf
-./solution < test/hanoi5.cnf
-./solution < test/hole6.cnf
-./solution < test/hole7.cnf
-./solution < test/uf250-08.cnf
-./solution < test/uuf200-013.cnf
+
+printf "Should be SAT: " &&  ./solution < test/hanoi4.cnf
+printf "Should be SAT: " && ./solution < test/hanoi5.cnf
+printf "Should be SAT: " && ./solution < test/uf250-08.cnf
+printf "Should be UNSAT: " && ./solution < test/hole6.cnf
+printf "Should be UNSAT: " && ./solution < test/hole7.cnf 
+printf "Should be UNSAT: " && ./solution < test/uuf200-013.cnf
