@@ -5,7 +5,7 @@ pub struct VariableInfo {
 	pub uip_mark : bool,
 	pub phase : bool,
 	pub value : VA,
-	pub decision_level : i32,
+	pub decision_level : usize,
 	pub ante : AnteLocation,
 	pub ante_ind : usize,
 	pub occurs : [i32; 2],

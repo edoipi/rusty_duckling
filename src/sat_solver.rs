@@ -10,9 +10,9 @@ use utils::*;
 pub struct SatSolver {
 	pub cnf_manager : CnfManager,
 	pub restarter : Restarter,
-	pub restarter_unit : i32,
-	pub next_decay : i32,
-	pub next_restart : i32
+	pub restarter_unit : usize,
+	pub next_decay : usize,
+	pub next_restart : usize
 }
 
 impl SatSolver {
@@ -57,7 +57,7 @@ impl SatSolver {
 		ret.cnf_manager.sort_vars();
 
 		for i in 0..ret.cnf_manager.var_order.len() {
-			ret.cnf_manager.var_position[ ret.cnf_manager.var_order[i as usize] as usize ] = i as i32;
+			ret.cnf_manager.var_position[ ret.cnf_manager.var_order[i as usize] as usize ] = i;
 		}
 
 		ret.cnf_manager.next_var = 0;
@@ -113,7 +113,7 @@ impl SatSolver {
 		for i in (self.cnf_manager.next_var as usize)..self.cnf_manager.var_order.len() {
 			if self.cnf_manager.vars[self.cnf_manager.var_order[i] as usize].value == VA::Free {
 				x = self.cnf_manager.var_order[i];
-				self.cnf_manager.next_var = (i + 1) as i32;
+				self.cnf_manager.next_var = i + 1;
 				return self.decide_sign(x);
 			}
 		}

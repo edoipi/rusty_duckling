@@ -1,8 +1,8 @@
 use std::io;
 
 pub struct SatInstance {
-	pub var_count : i32,
-	pub clause_count : i32,
+	pub var_count : usize,
+	pub clause_count : usize,
 	pub clauses : Vec<Vec<i32>>
 }
 
@@ -15,8 +15,8 @@ impl SatInstance {
 			let mut iter = input.split_whitespace();
 			iter.next();
 			iter.next();
-			instance.var_count = iter.next().unwrap().parse::<i32>().unwrap();
-			instance.clause_count = iter.next().unwrap().parse::<i32>().unwrap();
+			instance.var_count = iter.next().unwrap().parse::<usize>().unwrap();
+			instance.clause_count = iter.next().unwrap().parse::<usize>().unwrap();
 		}
 
 		for _ in 0..instance.clause_count {

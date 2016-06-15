@@ -7,11 +7,11 @@ use utils::*;
 use consts;
 
 pub struct CnfManager {
-	pub var_count : i32,
+	pub var_count : usize,
 	pub vars : Vec<VariableInfo>,
 	pub var_order : Vec<usize>,
-	pub var_position : Vec<i32>,
-	pub next_var : i32,
+	pub var_position : Vec<usize>,
+	pub next_var : usize,
 
 	pub lit_pool : Vec<i32>,
 	pub lit_pool_size_orig : usize,
@@ -19,11 +19,11 @@ pub struct CnfManager {
 	pub next_clause : i32,
 
 	pub decision_stack : Vec<i32>,
-	pub assertion_level : i32,
-	pub decision_level : i32,
-	pub decision_count : i32,
-	pub conflict_count : i32,
-	pub restart_count : i32,
+	pub assertion_level : usize,
+	pub decision_level : usize,
+	pub decision_count : usize,
+	pub conflict_count : usize,
+	pub restart_count : usize,
 	pub conflict_lit : VecDeque<i32>,
 	pub tmp_conflict_lit : VecDeque<i32>,
 	pub conflict_clause_ind : usize
@@ -63,7 +63,7 @@ impl CnfManager {
 		ret.vars[0].decision_level = 0;
 		ret.vars[0].value = VA::Free;
 
-		for i in 0..sat_instance.clause_count as usize {
+		for i in 0..sat_instance.clause_count {
 			if sat_instance.clauses[i].len() == 1 {
 				let lit = sat_instance.clauses[i][0];
 				if ret.free(&lit) {
@@ -96,13 +96,13 @@ impl CnfManager {
 
 		for i in 1..ret.var_count+1 {
 			for j in 0..2 {
-				ret.vars[i as usize].bin_imp[j].push(0);
-				ret.vars[i as usize].bin_imp[j].push(if j == VA::Pos as usize {i} else {-i});
-				ret.vars[i as usize].bin_imp[j].push(0);
-				for k in imp[j][i as usize].iter() {
-					ret.vars[i as usize].bin_imp[j].push(k.clone());
+				ret.vars[i].bin_imp[j].push(0);
+				ret.vars[i].bin_imp[j].push(if j == VA::Pos as usize {i as i32} else {-(i as i32)});
+				ret.vars[i].bin_imp[j].push(0);
+				for k in imp[j][i].iter() {
+					ret.vars[i].bin_imp[j].push(k.clone());
 				}
-				ret.vars[i as usize].bin_imp[j].push(0);
+				ret.vars[i].bin_imp[j].push(0);
 			}
 		}
 
@@ -157,9 +157,9 @@ impl CnfManager {
 			}}
 
 			let watchlist = &mut self2.vars[to_var(&lit)].watch[sign(&lit) as usize];
-			let mut it : i32 = 0;
-			while it < watchlist.len() as i32 {
-				let first = watchlist[it as usize];
+			let mut it = 0;
+			while it < watchlist.len() {
+				let first = watchlist[it];
 				let watch;
 				let other_watch;
 				if self.lit_pool[first] == lit {
@@ -188,7 +188,7 @@ impl CnfManager {
 					let plit = self.lit_pool[p];
 					self.vars[to_var(&plit)].watch[sign(&plit) as usize].push(first);
 
-					watchlist[it as usize] = watchlist.last().unwrap().clone();
+					watchlist[it] = watchlist.last().unwrap().clone();
 					watchlist.pop();
 					it -= 1;
 
@@ -287,7 +287,7 @@ impl CnfManager {
 			let var = to_var(&lit);
 			self2.vars[var].value = VA::Free;
 			if !self.vars[var].uip_mark {
-				if self.var_position[var] < self.next_var {
+				if (self.var_position[var]) < self.next_var {
 					self.next_var = self.var_position[var];
 				}
 				continue;
@@ -401,7 +401,7 @@ impl CnfManager {
 		return self.assert_literal(lit, AnteLocation::ctor(true), ind + 1);
 	}
 
-	pub fn revert_to_decision_level(&mut self, level : i32) -> () {
+	pub fn revert_to_decision_level(&mut self, level : usize) -> () {
 		let mut var = to_var(self.decision_stack.last().unwrap());
 		while self.vars[var].decision_level > level {
 			if self.vars[var].decision_level < self.decision_level {
@@ -419,7 +419,7 @@ impl CnfManager {
 	}
 
 	pub fn score_decay(&mut self) -> () {
-		for i in 1..(self.var_count + 1) as usize {
+		for i in 1..(self.var_count + 1){
 			self.vars[i].occurs[0] >>= 1;
 			self.vars[i].occurs[1] >>= 1;
 		}
@@ -446,31 +446,30 @@ impl CnfManager {
 			}
 
 			let weight = self.weight(&v);
-			if weight <= self.weight(&self.var_order[(pos - 1) as usize]) {
+			if weight <= self.weight(&self.var_order[pos - 1]) {
 				continue;
 			}
 
 			let mut step = consts::STEP_INITIAL;
-			let mut q = pos - step;
-			while q >= 0 {
-				if self.weight(&self.var_order[q as usize]) >= weight {
+			let mut q = pos;
+			while q >= step {
+				q -= step;
+				if self.weight(&self.var_order[q]) >= weight {
 					break;
 				}
-				q -= step;
 			}
-			q += step;
 			step >>= 1;
 			while step > 0 {
-				if q - step >= 0 && self.weight(&self.var_order[(q - step) as usize]) < weight {
+				if q >= step && self.weight(&self.var_order[q - step]) < weight {
 					q -= step;
 				}
 				step >>= 1;
 			}
 
-			self.var_order[pos as usize] = self.var_order[q as usize];
+			self.var_order[pos] = self.var_order[q];
 			self.var_position[v] = q;
-			self.var_position[self.var_order[q as usize] as usize] = pos;
-			self.var_order[q as usize] = v;
+			self.var_position[self.var_order[q]] = pos;
+			self.var_order[q] = v;
 		}
 	}
 
