@@ -6,7 +6,7 @@ use VariableInfo;
 use utils::*;
 use consts;
 
-pub struct CnfManager {
+pub struct Logic {
 	pub var_count : usize,
 	pub vars : Vec<VariableInfo>,
 	pub var_order : Vec<usize>,
@@ -28,9 +28,9 @@ pub struct CnfManager {
 	pub conflict_clause_ind : usize
 }
 
-impl CnfManager {
-	pub fn new(sat_instance : &SatInstance) -> CnfManager {
-		let mut ret = CnfManager {
+impl Logic {
+	pub fn new(sat_instance : &SatInstance) -> Logic {
+		let mut ret = Logic {
 			var_count : sat_instance.var_count,
 			vars : Vec::new(),
 			var_order : Vec::new(),
@@ -115,8 +115,8 @@ impl CnfManager {
 	}
 
 	pub fn assert_literal(&mut self, mut lit : i32, ante : AnteLocation, ante_ind : usize) -> bool {
-		let self2 = unsafe {&mut *(self as *mut CnfManager)};
-		let self3 = unsafe {&mut *(self as *mut CnfManager)};
+		let self2 = unsafe {&mut *(self as *mut Logic)};
+		let self3 = unsafe {&mut *(self as *mut Logic)};
 
 		let mut new_stack : Vec<i32> = Vec::new();
 		let mut new_stack_it = 0;
@@ -220,7 +220,7 @@ impl CnfManager {
 	}
 
 	pub fn assert_unit_clauses(&mut self) -> bool {
-		let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		let self2 = unsafe {&mut *(self as *mut Logic)};
 		for i in (1..self.decision_stack.len()).rev() {
 			let lit = self.decision_stack[i];
 			if i != self.decision_stack.len() - 1 {
@@ -242,9 +242,9 @@ impl CnfManager {
 	}
 
 	pub fn learn_clause(&mut self, ante_loc : AnteLocation, mut ind : usize) -> () {
-		let self2 = unsafe {&mut *(self as *mut CnfManager)};
-		let self3 = unsafe {&mut *(self as *mut CnfManager)};
-		let self4 = unsafe {&mut *(self as *mut CnfManager)};
+		let self2 = unsafe {&mut *(self as *mut Logic)};
+		let self3 = unsafe {&mut *(self as *mut Logic)};
+		let self4 = unsafe {&mut *(self as *mut Logic)};
 
 		let conflict_clause =
 			if ante_loc.is_lit_pool {
@@ -423,7 +423,7 @@ impl CnfManager {
 	}
 
 	pub fn update_weights(&mut self, ante_loc : AnteLocation, mut ind : usize) -> () {
-		let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		let self2 = unsafe {&mut *(self as *mut Logic)};
 		let vec =
 			if ante_loc.is_lit_pool {
 				&self.lit_pool
@@ -471,7 +471,7 @@ impl CnfManager {
 	}
 
 	pub fn sort_vars(&mut self) {
-		let uns = unsafe {&mut *(self as *mut CnfManager)};
+		let uns = unsafe {&mut *(self as *mut Logic)};
 		self.var_order.sort_by(|a, b| uns.weight(a).cmp(&uns.weight(b)));
 	}
 

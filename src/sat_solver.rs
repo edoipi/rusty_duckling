@@ -1,5 +1,5 @@
 use std::iter::*;
-use cnf_manager::*;
+use logic::*;
 use consts;
 use SatInstance;
 use Restarter;
@@ -7,7 +7,7 @@ use AnteLocation;
 use utils::*;
 
 pub struct SatSolver {
-	pub cnf_manager : CnfManager,
+	pub logic : Logic,
 	pub restarter : Restarter,
 	pub restarter_unit : usize,
 	pub next_decay : usize,
@@ -17,7 +17,7 @@ pub struct SatSolver {
 impl SatSolver {
 	pub fn new(sat_instance: &SatInstance) -> SatSolver {
 		let mut ret = SatSolver {
-			cnf_manager : CnfManager::new(sat_instance),
+			logic : Logic::new(sat_instance),
 			restarter : Restarter::new(),
 			restarter_unit : consts::RESTART_MULTIPLIER,
 			next_decay : consts::DECAY_INTERVAL,
@@ -26,26 +26,26 @@ impl SatSolver {
 
 		ret.next_restart = ret.restarter.next_threshold() * ret.restarter_unit;
 
-		if ret.cnf_manager.decision_level == 0 {
+		if ret.logic.decision_level == 0 {
 			return ret;
 		}
 
 
-		for i in 1..(ret.cnf_manager.var_count+1) as usize {
-			if ret.cnf_manager.vars[i].value == VA::Free {
-				if ret.cnf_manager.vars[i].occurs[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].occurs[VA::Neg as usize] > 0 {
-					ret.cnf_manager.assert_literal(-(i as i32), AnteLocation::new(), 0);
-				} else if ret.cnf_manager.vars[i].occurs[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].occurs[VA::Pos as usize] > 0 {
-					ret.cnf_manager.assert_literal((i as i32), AnteLocation::new(), 0);
+		for i in 1..(ret.logic.var_count+1) as usize {
+			if ret.logic.vars[i].value == VA::Free {
+				if ret.logic.vars[i].occurs[VA::Pos as usize] == 0 && ret.logic.vars[i].occurs[VA::Neg as usize] > 0 {
+					ret.logic.assert_literal(-(i as i32), AnteLocation::new(), 0);
+				} else if ret.logic.vars[i].occurs[VA::Neg as usize] == 0 && ret.logic.vars[i].occurs[VA::Pos as usize] > 0 {
+					ret.logic.assert_literal((i as i32), AnteLocation::new(), 0);
 				}
 			}
 		}
 
-		for i in 1..(ret.cnf_manager.var_count+1) as usize {
-			if ret.cnf_manager.vars[i].value == VA::Free && ret.cnf_manager.weight(&i) > 0 {
-				ret.cnf_manager.var_order.push(i);
-				ret.cnf_manager.vars[i].phase =
-					if ret.cnf_manager.vars[i].occurs[VA::Pos as usize] > ret.cnf_manager.vars[i].occurs[VA::Neg as usize] {
+		for i in 1..(ret.logic.var_count+1) as usize {
+			if ret.logic.vars[i].value == VA::Free && ret.logic.weight(&i) > 0 {
+				ret.logic.var_order.push(i);
+				ret.logic.vars[i].phase =
+					if ret.logic.vars[i].occurs[VA::Pos as usize] > ret.logic.vars[i].occurs[VA::Neg as usize] {
 						true
 					} else {
 						false
@@ -53,37 +53,37 @@ impl SatSolver {
 			}
 		}
 
-		ret.cnf_manager.sort_vars();
+		ret.logic.sort_vars();
 
-		for i in 0..ret.cnf_manager.var_order.len() {
-			ret.cnf_manager.var_position[ ret.cnf_manager.var_order[i as usize] as usize ] = i;
+		for i in 0..ret.logic.var_order.len() {
+			ret.logic.var_position[ ret.logic.var_order[i as usize] as usize ] = i;
 		}
 
-		ret.cnf_manager.next_var = 0;
-		ret.cnf_manager.next_clause = ret.cnf_manager.clauses.len() as i32 - 1;
+		ret.logic.next_var = 0;
+		ret.logic.next_clause = ret.logic.clauses.len() as i32 - 1;
 
 		ret
 	}
 
 	pub fn select_literal(& mut self) -> i32 {
 		let mut x = 0;
-		let last_clause = if self.cnf_manager.next_clause > consts::CLAUSE_LIMIT {
-			self.cnf_manager.next_clause - consts::CLAUSE_LIMIT
+		let last_clause = if self.logic.next_clause > consts::CLAUSE_LIMIT {
+			self.logic.next_clause - consts::CLAUSE_LIMIT
 		} else {
 			0
 		};
 
-		for i in (last_clause..(self.cnf_manager.next_clause + 1)).rev() {
-			self.cnf_manager.next_clause = i;
+		for i in (last_clause..(self.logic.next_clause + 1)).rev() {
+			self.logic.next_clause = i;
 
 			let mut sat = false;
-			let mut ind = self.cnf_manager.clauses[i as usize] as usize;
-			while self.cnf_manager.lit_pool[ind] != 0 {
-				let lit = self.cnf_manager.lit_pool[ind];
+			let mut ind = self.logic.clauses[i as usize] as usize;
+			while self.logic.lit_pool[ind] != 0 {
+				let lit = self.logic.lit_pool[ind];
 				if lit == 0 {
 					break;
 				}
-				if self.cnf_manager.good(&lit) {
+				if self.logic.good(&lit) {
 					sat = true;
 					break;
 				}
@@ -94,25 +94,25 @@ impl SatSolver {
 			}
 
 			let mut weight = -1;
-			ind = self.cnf_manager.clauses[i as usize] as usize;
-			while self.cnf_manager.lit_pool[ind] != 0 {
-				let lit = self.cnf_manager.lit_pool[ind];
+			ind = self.logic.clauses[i as usize] as usize;
+			while self.logic.lit_pool[ind] != 0 {
+				let lit = self.logic.lit_pool[ind];
 				if lit == 0 {
 					break;
 				}
-				if self.cnf_manager.free(&lit) && self.cnf_manager.weight(&to_var(&lit)) > weight {
+				if self.logic.free(&lit) && self.logic.weight(&to_var(&lit)) > weight {
 					x = to_var(&lit);
-					weight = self.cnf_manager.weight(&x);
+					weight = self.logic.weight(&x);
 				}
 				ind += 1;
 			}
 			return self.decide_sign(x);
 		}
 
-		for i in (self.cnf_manager.next_var as usize)..self.cnf_manager.var_order.len() {
-			if self.cnf_manager.vars[self.cnf_manager.var_order[i] as usize].value == VA::Free {
-				x = self.cnf_manager.var_order[i];
-				self.cnf_manager.next_var = i + 1;
+		for i in (self.logic.next_var as usize)..self.logic.var_order.len() {
+			if self.logic.vars[self.logic.var_order[i] as usize].value == VA::Free {
+				x = self.logic.var_order[i];
+				self.logic.next_var = i + 1;
 				return self.decide_sign(x);
 			}
 		}
@@ -120,13 +120,13 @@ impl SatSolver {
 	}
 
 	pub fn decide_sign(&self, var : usize) -> i32 {
-		let diff = self.cnf_manager.vars[var as usize].occurs[VA::Pos as usize]
-				- self.cnf_manager.vars[var as usize].occurs[VA::Neg as usize];
+		let diff = self.logic.vars[var as usize].occurs[VA::Pos as usize]
+				- self.logic.vars[var as usize].occurs[VA::Neg as usize];
 		if diff > consts::PHASE_THRESHOLD {
 			var as i32
 		} else if -diff > consts::PHASE_THRESHOLD {
 			-(var as i32)
-		} else if self.cnf_manager.vars[var as usize].phase {
+		} else if self.logic.vars[var as usize].phase {
 			var as i32
 		} else {
 			-(var as i32)
@@ -134,37 +134,37 @@ impl SatSolver {
 	}
 
 	pub fn run(&mut self) -> bool {
-		if self.cnf_manager.decision_level == 0 {
+		if self.logic.decision_level == 0 {
 			return false;
 		}
 		let mut lit = self.select_literal();
 		while lit != 0 {
-			if !self.cnf_manager.decide(lit) {
+			if !self.logic.decide(lit) {
 				loop {
-					if self.cnf_manager.assertion_level == 0 {
+					if self.logic.assertion_level == 0 {
 						return false;
 					}
 
-					if self.cnf_manager.conflict_count == self.next_decay {
+					if self.logic.conflict_count == self.next_decay {
 						self.next_decay += consts::DECAY_INTERVAL;
-						self.cnf_manager.score_decay();
+						self.logic.score_decay();
 					}
 
-					self.cnf_manager.next_clause = self.cnf_manager.clauses.len() as i32 - 1;
+					self.logic.next_clause = self.logic.clauses.len() as i32 - 1;
 
-					if self.cnf_manager.conflict_count == self.next_restart {
-						self.cnf_manager.restart_count += 1;
+					if self.logic.conflict_count == self.next_restart {
+						self.logic.restart_count += 1;
 						self.next_restart += self.restarter.next_threshold() * self.restarter_unit;
-						self.cnf_manager.revert_to_decision_level(1);
-						if self.cnf_manager.decision_level != self.cnf_manager.assertion_level {
+						self.logic.revert_to_decision_level(1);
+						if self.logic.decision_level != self.logic.assertion_level {
 							break;
 						}
 					} else {
-						let level = self.cnf_manager.assertion_level;
-						self.cnf_manager.revert_to_decision_level(level);
+						let level = self.logic.assertion_level;
+						self.logic.revert_to_decision_level(level);
 					}
 
-					if self.cnf_manager.assert_conflict_literal() {
+					if self.logic.assert_conflict_literal() {
 						break;
 					}
 				}
@@ -175,8 +175,8 @@ impl SatSolver {
 	}
 
 	pub fn print_solution(&self) -> () {
-		for i in 1..(self.cnf_manager.var_count+1) as usize {
-			let ref vars = self.cnf_manager.vars;
+		for i in 1..(self.logic.var_count+1) as usize {
+			let ref vars = self.logic.vars;
 			if vars[i].value == VA::Pos {
 				print!("{} ", i);
 			} else {
