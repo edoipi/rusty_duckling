@@ -1,36 +1,13 @@
 use std::iter::*;
 use std::process::exit;
-use SatInstance;
 use cnf_manager::*;
-
-pub struct Luby {
-	pub seq : Vec<i32>,
-	pub index : i32,
-	pub k : i32
-}
-
-impl Luby {
-	pub fn new() -> Luby {
-		Luby {seq : Vec::new(), index : 0, k : 1}
-	}
-
-	pub fn next(& mut self) -> i32 {
-		self.index += 1;
-		if self.index == (1 << self.k) - 1 {
-			self.seq.push(1 << (self.k - 1));
-			self.k += 1;
-		} else {
-			let val = self.seq[(self.index - (1 << (self.k - 1))) as usize];
-			self.seq.push(val);
-		}
-		self.seq.last().unwrap().clone()
-	}
-}
+use SatInstance;
+use Restarter;
 
 pub struct SatSolver {
 	pub cnf_manager : CnfManager,
-	pub luby : Luby,
-	pub luby_unit : i32,
+	pub restarter : Restarter,
+	pub restarter_unit : i32,
 	pub next_decay : i32,
 	pub next_restart : i32
 }
@@ -39,13 +16,13 @@ impl SatSolver {
 	pub fn new(sat_instance: &SatInstance) -> SatSolver {
 		let mut ret = SatSolver {
 			cnf_manager : CnfManager::new(sat_instance),
-			luby : Luby::new(),
-			luby_unit : 512,
+			restarter : Restarter::new(),
+			restarter_unit : 512,
 			next_decay : 128,
 			next_restart : 0
 		};
 
-		ret.next_restart = ret.luby.next()*ret.luby_unit;
+		ret.next_restart = ret.restarter.next_threshold() * ret.restarter_unit;
 
 		if ret.cnf_manager.decision_level == 0 {
 			return ret;
@@ -183,7 +160,7 @@ impl SatSolver {
 
 					if self.cnf_manager.conflict_count == self.next_restart {
 						self.cnf_manager.restart_count += 1;
-						self.next_restart += self.luby.next() * self.luby_unit;
+						self.next_restart += self.restarter.next_threshold() * self.restarter_unit;
 						self.cnf_manager.backtrack(1);
 						if self.cnf_manager.decision_level != self.cnf_manager.assertion_level {
 							break;
