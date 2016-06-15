@@ -14,7 +14,7 @@ fn main() {
 		let satisfiable = sat_solver.run();
 		if satisfiable {
 			println!("SAT");
-			sat_solver.printSolution();
+			sat_solver.print_solution();
 		} else {
 			println!("UNSAT");
 		}

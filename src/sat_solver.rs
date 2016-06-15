@@ -86,7 +86,7 @@ impl SatSolver {
 		ret
 	}
 
-	pub fn selectLiteral(& mut self) -> i32 {
+	pub fn select_literal(& mut self) -> i32 {
 		let mut x = 0 as i32;
 		let last_clause = if self.cnf_manager.next_clause > 256 {
 			self.cnf_manager.next_clause - 256
@@ -166,7 +166,7 @@ impl SatSolver {
 		if self.cnf_manager.decision_level == 0 {
 			return false;
 		}
-		let mut lit = self.selectLiteral();
+		let mut lit = self.select_literal();
 		while lit != 0 {
 			if !self.cnf_manager.decide(lit) {
 				loop {
@@ -198,16 +198,16 @@ impl SatSolver {
 					}
 				}
 			}
-			lit = self.selectLiteral();
+			lit = self.select_literal();
 		}
-		if !self.verifySolution() {
+		if !self.verify_solution() {
 			println!("ERROR");
 			exit(0);
 		}
 		true
 	}
 
-	pub fn verifySolution(&self) -> bool {
+	pub fn verify_solution(&self) -> bool {
 		let ref pool = self.cnf_manager.lit_pool;
 		let mut i = 0;
 		while i < self.cnf_manager.lit_pool_size_orig {
@@ -231,7 +231,7 @@ impl SatSolver {
 		true
 	}
 
-	pub fn printSolution(&self) -> () {
+	pub fn print_solution(&self) -> () {
 		for i in 1..(self.cnf_manager.var_count+1) as usize {
 			let ref vars = self.cnf_manager.vars;
 			if vars[i].value == VA::Pos {
@@ -243,7 +243,7 @@ impl SatSolver {
 		println!("0");
 	}
 
-	pub fn printStats(&self) -> () {
+	pub fn print_stats(&self) -> () {
 		let ref m = self.cnf_manager;
 		println!("c {} decisions, {} conflicts, {} restarts", m.decision_count, m.conflict_count, m.restart_count);
 	}
