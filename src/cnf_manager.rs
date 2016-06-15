@@ -332,18 +332,17 @@ impl CnfManager {
 
 	pub fn assertUnitClauses(&mut self) -> bool {
 		//println!("assertUnitClauses");
-		let mut lit : i32 = self.decision_stack.last().unwrap().clone();
-		while lit != 0 {
-			self.decision_stack.pop();
-
-			let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		let self2 = unsafe {&mut *(self as *mut CnfManager)};
+		for i in (1..self.decision_stack.len()).rev() {
+			let lit = self.decision_stack[i];
+			if i != self.decision_stack.len() - 1{
+				self.decision_stack[i] = self.decision_stack.pop().unwrap();
+			}
 
 			if !self2.assertLiteral(lit, ArrTuple::ctor(true), &self.lit_pool.len().clone() - 1) {
-				let level = self.decision_level - 1;
-				self2.backtrack(level);
+				self2.backtrack(self.decision_level - 1);
 				return false;
 			}
-			lit = self.decision_stack.last().unwrap().clone();
 		}
 		true
 	}
