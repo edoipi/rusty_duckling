@@ -9,7 +9,7 @@ use consts;
 pub struct CnfManager {
 	pub var_count : i32,
 	pub vars : Vec<VariableInfo>,
-	pub var_order : Vec<i32>,
+	pub var_order : Vec<usize>,
 	pub var_position : Vec<i32>,
 	pub next_var : i32,
 
@@ -78,15 +78,15 @@ impl CnfManager {
 				let lit1 = sat_instance.clauses[i][1];
 				imp[sign(&lit0) as usize][to_var(&lit0)].push(lit1);
 				imp[sign(&lit1) as usize][to_var(&lit1)].push(lit0);
-				ret.vars[to_var(&lit0)].activity[sign(&lit0) as usize] += 1;
-				ret.vars[to_var(&lit1)].activity[sign(&lit1) as usize] += 1;
+				ret.vars[to_var(&lit0)].occurs[sign(&lit0) as usize] += 1;
+				ret.vars[to_var(&lit1)].occurs[sign(&lit1) as usize] += 1;
 			} else {
 				let lit0 = sat_instance.clauses[i][0];
 				let lit1 = sat_instance.clauses[i][1];
 				ret.vars[to_var(&lit0)].watch[sign(&lit0) as usize].push(ret.lit_pool.len());
 				ret.vars[to_var(&lit1)].watch[sign(&lit1) as usize].push(ret.lit_pool.len());
 				for j in sat_instance.clauses[i].iter() {
-					ret.vars[to_var(j)].activity[sign(j) as usize] += 1;
+					ret.vars[to_var(j)].occurs[sign(j) as usize] += 1;
 					ret.lit_pool.push(j.clone());
 				}
 				ret.lit_pool.push(0);
@@ -420,8 +420,8 @@ impl CnfManager {
 
 	pub fn score_decay(&mut self) -> () {
 		for i in 1..(self.var_count + 1) as usize {
-			self.vars[i].activity[0] >>= 1;
-			self.vars[i].activity[1] >>= 1;
+			self.vars[i].occurs[0] >>= 1;
+			self.vars[i].occurs[1] >>= 1;
 		}
 	}
 
@@ -437,7 +437,7 @@ impl CnfManager {
 		while vec[ind] != 0 {
 			let lit = &vec[ind];
 			let v = to_var(lit);
-			self2.vars[v].activity[sign(lit) as usize] += 1;
+			self2.vars[v].occurs[sign(lit) as usize] += 1;
 			let pos = self.var_position[v];
 			ind += 1;
 
@@ -445,7 +445,7 @@ impl CnfManager {
 				continue;
 			}
 
-			let weight = self.weight(&(v as i32));
+			let weight = self.weight(&v);
 			if weight <= self.weight(&self.var_order[(pos - 1) as usize]) {
 				continue;
 			}
@@ -470,7 +470,7 @@ impl CnfManager {
 			self.var_order[pos as usize] = self.var_order[q as usize];
 			self.var_position[v] = q;
 			self.var_position[self.var_order[q as usize] as usize] = pos;
-			self.var_order[q as usize] = v as i32;
+			self.var_order[q as usize] = v;
 		}
 	}
 
@@ -492,7 +492,7 @@ impl CnfManager {
 		self.vars[to_var(&lit)].value == sign(&neg)
 	}
 
-	pub fn weight(&self, &var : &i32) -> i32 {
-		self.vars[var as usize].activity[0] + self.vars[var as usize].activity[1]
+	pub fn weight(&self, &var : &usize) -> i32 {
+		self.vars[var].occurs[0] + self.vars[var].occurs[1]
 	}
 }

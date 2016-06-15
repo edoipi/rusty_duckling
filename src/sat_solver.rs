@@ -34,19 +34,19 @@ impl SatSolver {
 
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
 			if ret.cnf_manager.vars[i].value == VA::Free {
-				if ret.cnf_manager.vars[i].activity[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Neg as usize] > 0 {
+				if ret.cnf_manager.vars[i].occurs[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].occurs[VA::Neg as usize] > 0 {
 					ret.cnf_manager.assert_literal(-(i as i32), AnteLocation::new(), 0);
-				} else if ret.cnf_manager.vars[i].activity[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Pos as usize] > 0 {
+				} else if ret.cnf_manager.vars[i].occurs[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].occurs[VA::Pos as usize] > 0 {
 					ret.cnf_manager.assert_literal((i as i32), AnteLocation::new(), 0);
 				}
 			}
 		}
 
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
-			if ret.cnf_manager.vars[i].value == VA::Free && ret.cnf_manager.weight(&(i as i32)) > 0 {
-				ret.cnf_manager.var_order.push(i as i32);
+			if ret.cnf_manager.vars[i].value == VA::Free && ret.cnf_manager.weight(&i) > 0 {
+				ret.cnf_manager.var_order.push(i);
 				ret.cnf_manager.vars[i].phase =
-					if ret.cnf_manager.vars[i].activity[VA::Pos as usize] > ret.cnf_manager.vars[i].activity[VA::Neg as usize] {
+					if ret.cnf_manager.vars[i].occurs[VA::Pos as usize] > ret.cnf_manager.vars[i].occurs[VA::Neg as usize] {
 						true
 					} else {
 						false
@@ -67,7 +67,7 @@ impl SatSolver {
 	}
 
 	pub fn select_literal(& mut self) -> i32 {
-		let mut x = 0 as i32;
+		let mut x = 0;
 		let last_clause = if self.cnf_manager.next_clause > consts::CLAUSE_LIMIT {
 			self.cnf_manager.next_clause - consts::CLAUSE_LIMIT
 		} else {
@@ -101,45 +101,37 @@ impl SatSolver {
 				if lit == 0 {
 					break;
 				}
-				if self.cnf_manager.free(&lit) && self.cnf_manager.weight(&(to_var(&lit) as i32)) > weight {
-					x = to_var(&lit) as i32;
+				if self.cnf_manager.free(&lit) && self.cnf_manager.weight(&to_var(&lit)) > weight {
+					x = to_var(&lit);
 					weight = self.cnf_manager.weight(&x);
 				}
 				ind += 1;
 			}
-
-			let d = self.cnf_manager.vars[x as usize].activity[VA::Pos as usize]
-					- self.cnf_manager.vars[x as usize].activity[VA::Neg as usize];
-			if d > consts::PHASE_THRESHOLD {
-				return x;
-			} else if -d > consts::PHASE_THRESHOLD {
-				return -x;
-			} else if self.cnf_manager.vars[x as usize].phase {
-				return x;
-			} else {
-				return -x;
-			}
+			return self.decide_sign(x);
 		}
 
 		for i in (self.cnf_manager.next_var as usize)..self.cnf_manager.var_order.len() {
 			if self.cnf_manager.vars[self.cnf_manager.var_order[i] as usize].value == VA::Free {
 				x = self.cnf_manager.var_order[i];
 				self.cnf_manager.next_var = (i + 1) as i32;
-
-				let d = self.cnf_manager.vars[x as usize].activity[VA::Pos as usize]
-					- self.cnf_manager.vars[x as usize].activity[VA::Neg as usize];
-				if d > consts::PHASE_THRESHOLD {
-					return x;
-				} else if -d > consts::PHASE_THRESHOLD {
-					return -x;
-				} else if self.cnf_manager.vars[x as usize].phase {
-					return x;
-				} else {
-					return -x;
-				}
+				return self.decide_sign(x);
 			}
 		}
 		0
+	}
+
+	pub fn decide_sign(&self, var : usize) -> i32 {
+		let diff = self.cnf_manager.vars[var as usize].occurs[VA::Pos as usize]
+				- self.cnf_manager.vars[var as usize].occurs[VA::Neg as usize];
+		if diff > consts::PHASE_THRESHOLD {
+			var as i32
+		} else if -diff > consts::PHASE_THRESHOLD {
+			-(var as i32)
+		} else if self.cnf_manager.vars[var as usize].phase {
+			var as i32
+		} else {
+			-(var as i32)
+		}
 	}
 
 	pub fn run(&mut self) -> bool {
