@@ -231,7 +231,7 @@ impl CnfManager {
 			}
 
 			if !self2.assert_literal(lit, AnteLocation::ctor(true), &self.lit_pool.len().clone() - 1) {
-				self2.backtrack(self.decision_level - 1);
+				self2.revert_to_decision_level(self.decision_level - 1);
 				return false;
 			}
 		}
@@ -401,7 +401,7 @@ impl CnfManager {
 		return self.assert_literal(lit, AnteLocation::ctor(true), ind + 1);
 	}
 
-	pub fn backtrack(&mut self, level : i32) -> () {
+	pub fn revert_to_decision_level(&mut self, level : i32) -> () {
 		let mut var = to_var(self.decision_stack.last().unwrap());
 		while self.vars[var].decision_level > level {
 			if self.vars[var].decision_level < self.decision_level {
