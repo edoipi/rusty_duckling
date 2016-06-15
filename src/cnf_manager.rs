@@ -213,7 +213,7 @@ impl CnfManager {
 	}
 
 	pub fn setLiteral(&mut self, lit : i32, ante : ArrTuple, ind : usize) -> () {
-		//println!("Set literal {}", lit);
+		//println!("Set literal {}, ante_ind = {}", lit, ind);
 		self.vars[VAR(&lit)].value = SIGN(&lit);
 		self.vars[VAR(&lit)].ante = ante;
 		self.vars[VAR(&lit)].ante_ind = ind;
@@ -335,7 +335,7 @@ impl CnfManager {
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		for i in (1..self.decision_stack.len()).rev() {
 			let lit = self.decision_stack[i];
-			if i != self.decision_stack.len() - 1{
+			if i != self.decision_stack.len() - 1 {
 				self.decision_stack[i] = self.decision_stack.pop().unwrap();
 			}
 
@@ -414,7 +414,6 @@ impl CnfManager {
 				self.next_var = self.var_position[var];
 			}
 
-			//println!("curLevelLits {}", cur_level_lits);
 			if cur_level_lits == 1 {
 				cur_level_lits -= 1;
 				break;
@@ -455,10 +454,10 @@ impl CnfManager {
 			let x = &self.vars[VAR(conf_lit)].ante;
 			if x.is_null == false {
 				let ante = 
-					if tuple.is_lit_pool {
+					if x.is_lit_pool {
 						&self.lit_pool
 					} else {
-						&self.vars[tuple.var_index].bin_imp[tuple.positive]
+						&self.vars[x.var_index].bin_imp[x.positive]
 					};
 				let mut z = self.vars[VAR(conf_lit)].ante_ind;
 				while ante[z] != 0 {
