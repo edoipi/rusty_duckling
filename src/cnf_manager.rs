@@ -1,72 +1,13 @@
 use std::collections::VecDeque;
 use std::process::exit;
 use SatInstance;
+use AnteLocation;
+use VariableInfo;
 use utils::*;
-
-#[derive(Clone)]
-pub struct ArrTuple {
-	pub is_null: bool,
-	pub is_lit_pool: bool,
-	pub var_index: usize,
-	pub positive: usize
-}
-
-impl ArrTuple {
-	pub fn new() -> ArrTuple {
-		ArrTuple {
-			is_null: true,
-			is_lit_pool: false,
-			var_index: 0,
-			positive: 0,
-		}
-	}
-
-	pub fn ctor(islp : bool) -> ArrTuple {
-		let mut nt = ArrTuple::new();
-		nt.is_null = false;
-		nt.is_lit_pool = islp;
-		nt
-	}
-
-	pub fn ctor2(vari : usize, pos : usize) -> ArrTuple {
-		let mut nt = ArrTuple::ctor(false);
-		nt.var_index = vari;
-		nt.positive = pos;
-		nt
-	}
-}
-
-pub struct Variable {
-	pub uip_mark : bool,
-	pub phase : bool,
-	pub value : VA,
-	pub decision_level : i32,
-	pub ante : ArrTuple,
-	pub ante_ind : usize,
-	pub activity : [i32; 2],
-	pub bin_imp : [Vec<i32>; 2],
-	pub watch : [Vec<usize>; 2]
-}
-
-impl Variable {
-	pub fn new() -> Variable {
-		Variable {
-			uip_mark : false,
-			phase : false,
-			value : VA::Free,
-			decision_level : 0,
-			ante : ArrTuple::new(),
-			ante_ind : 0,
-			activity : [0, 0],
-			bin_imp : [Vec::new(), Vec::new()],
-			watch : [Vec::new(), Vec::new()]
-		}
-	}
-}
 
 pub struct CnfManager {
 	pub var_count : i32,
-	pub vars : Vec<Variable>,
+	pub vars : Vec<VariableInfo>,
 	pub var_order : Vec<i32>,
 	pub var_position : Vec<i32>,
 	pub next_var : i32,
@@ -111,7 +52,7 @@ impl CnfManager {
 		};
 		let mut imp : [Vec<Vec<i32>>; 2] = [Vec::new(), Vec::new()];
 		for _ in 0..ret.var_count+1 {
-			ret.vars.push(Variable::new());
+			ret.vars.push(VariableInfo::new());
 			ret.var_position.push(0);
 			imp[0].push(Vec::new());
 			imp[1].push(Vec::new());
@@ -126,7 +67,7 @@ impl CnfManager {
 				let lit = sat_instance.clauses[i][0];
 				if ret.free(&lit) {
 					ret.decision_stack.push(lit);
-					ret.set_literal(lit, ArrTuple::new(), 0);
+					ret.set_literal(lit, AnteLocation::new(), 0);
 				} else if ret.bad(&lit) {
 					println!("UNSAT");
 					exit(0);
@@ -168,14 +109,14 @@ impl CnfManager {
 		ret
 	}
 
-	pub fn set_literal(&mut self, lit : i32, ante : ArrTuple, ind : usize) -> () {
+	pub fn set_literal(&mut self, lit : i32, ante : AnteLocation, ind : usize) -> () {
 		self.vars[to_var(&lit)].value = sign(&lit);
 		self.vars[to_var(&lit)].ante = ante;
 		self.vars[to_var(&lit)].ante_ind = ind;
 		self.vars[to_var(&lit)].decision_level = self.decision_level;
 	}
 
-	pub fn assert_literal(&mut self, mut lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
+	pub fn assert_literal(&mut self, mut lit : i32, ante : AnteLocation, ante_ind : usize) -> bool {
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let self3 = unsafe {&mut *(self as *mut CnfManager)};
 
@@ -200,7 +141,7 @@ impl CnfManager {
 						break;
 					}
 					new_stack.push(imp_lit);
-					self3.set_literal(imp_lit, ArrTuple::ctor2(to_var(&lit), sign(&lit) as usize), 1);
+					self3.set_literal(imp_lit, AnteLocation::ctor2(to_var(&lit), sign(&lit) as usize), 1);
 				} else if self.bad(&imp_lit) {
 					self3.conflict_count += 1;
 					while new_stack_it < new_stack.len() {
@@ -208,7 +149,7 @@ impl CnfManager {
 						new_stack_it += 1;
 					}
 					imp[0] = imp_lit;
-					self3.learn_clause(ArrTuple::ctor2(to_var(&lit), sign(&lit) as usize), 0);
+					self3.learn_clause(AnteLocation::ctor2(to_var(&lit), sign(&lit) as usize), 0);
 					return false;
 				}
 				imp_ind += 1;
@@ -257,7 +198,7 @@ impl CnfManager {
 					let olit = self.lit_pool[other_watch];
 					if self.free(&olit) {
 						new_stack.push(olit);
-						self.set_literal(olit, ArrTuple::ctor(true), first + 1);
+						self.set_literal(olit, AnteLocation::ctor(true), first + 1);
 
 						if other_watch != first {
 							let x = self.lit_pool[other_watch];
@@ -270,7 +211,7 @@ impl CnfManager {
 							self.decision_stack.push(new_stack[new_stack_it]);
 							new_stack_it += 1;
 						}
-						self.learn_clause(ArrTuple::ctor(true), first);
+						self.learn_clause(AnteLocation::ctor(true), first);
 						return false;
 					}
 				}
@@ -288,7 +229,7 @@ impl CnfManager {
 				self.decision_stack[i] = self.decision_stack.pop().unwrap();
 			}
 
-			if !self2.assert_literal(lit, ArrTuple::ctor(true), &self.lit_pool.len().clone() - 1) {
+			if !self2.assert_literal(lit, AnteLocation::ctor(true), &self.lit_pool.len().clone() - 1) {
 				self2.backtrack(self.decision_level - 1);
 				return false;
 			}
@@ -299,19 +240,19 @@ impl CnfManager {
 	pub fn decide(&mut self, lit : i32) -> bool {
 		self.decision_count += 1;
 		self.decision_level += 1;
-		return self.assert_literal(lit, ArrTuple::new(), 0);
+		return self.assert_literal(lit, AnteLocation::new(), 0);
 	}
 
-	pub fn learn_clause(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
+	pub fn learn_clause(&mut self, ante_loc : AnteLocation, mut ind : usize) -> () {
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let self3 = unsafe {&mut *(self as *mut CnfManager)};
 		let self4 = unsafe {&mut *(self as *mut CnfManager)};
 
 		let conflict_clause =
-			if tuple.is_lit_pool {
+			if ante_loc.is_lit_pool {
 				&self.lit_pool
 			} else {
-				&self.vars[tuple.var_index].bin_imp[tuple.positive]
+				&self.vars[ante_loc.var_index].bin_imp[ante_loc.positive]
 			};
 
 		if self.decision_level == 1 {
@@ -319,7 +260,7 @@ impl CnfManager {
 			return;
 		}
 
-		self2.update_weights(tuple.clone(), ind);
+		self2.update_weights(ante_loc.clone(), ind);
 
 		self.conflict_lit.clear();
 		self.tmp_conflict_lit.clear();
@@ -456,7 +397,7 @@ impl CnfManager {
 	pub fn assert_conflict_literal(&mut self) -> bool {
 		let ind = self.conflict_clause_ind.clone();
 		let lit = self.lit_pool[ind].clone();
-		return self.assert_literal(lit, ArrTuple::ctor(true), ind + 1);
+		return self.assert_literal(lit, AnteLocation::ctor(true), ind + 1);
 	}
 
 	pub fn backtrack(&mut self, level : i32) -> () {
@@ -483,13 +424,13 @@ impl CnfManager {
 		}
 	}
 
-	pub fn update_weights(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
+	pub fn update_weights(&mut self, ante_loc : AnteLocation, mut ind : usize) -> () {
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let vec =
-			if tuple.is_lit_pool {
+			if ante_loc.is_lit_pool {
 				&self.lit_pool
 			} else {
-				&self.vars[tuple.var_index].bin_imp[tuple.positive]
+				&self.vars[ante_loc.var_index].bin_imp[ante_loc.positive]
 			};
 
 		while vec[ind] != 0 {

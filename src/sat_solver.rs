@@ -4,6 +4,7 @@ use cnf_manager::*;
 use consts;
 use SatInstance;
 use Restarter;
+use AnteLocation;
 use utils::*;
 
 pub struct SatSolver {
@@ -34,9 +35,9 @@ impl SatSolver {
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
 			if ret.cnf_manager.vars[i].value == VA::Free {
 				if ret.cnf_manager.vars[i].activity[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Neg as usize] > 0 {
-					ret.cnf_manager.assert_literal(-(i as i32), ArrTuple::new(), 0);
+					ret.cnf_manager.assert_literal(-(i as i32), AnteLocation::new(), 0);
 				} else if ret.cnf_manager.vars[i].activity[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Pos as usize] > 0 {
-					ret.cnf_manager.assert_literal((i as i32), ArrTuple::new(), 0);
+					ret.cnf_manager.assert_literal((i as i32), AnteLocation::new(), 0);
 				}
 			}
 		}
