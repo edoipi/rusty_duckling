@@ -16,8 +16,8 @@ impl ArrTuple {
 		ArrTuple {
 			is_null: true,
 			is_lit_pool: false,
-			var_index: 1000,
-			positive: 1000,
+			var_index: 0,
+			positive: 0,
 		}
 	}
 
