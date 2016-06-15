@@ -39,7 +39,6 @@ CnfManager::CnfManager(Cnf &cnf) {
     nDecisions = nConflicts = nRestarts = 0;
     varOrder = (unsigned *) calloc(vc + 1, sizeof(unsigned));
     varPosition = (unsigned *) calloc(vc + 1, sizeof(unsigned));
-    int *zero = stackTop = (int *) calloc(vc + 1, sizeof(int));
 
     // implication lists in lieu of watch lists for binary clauses
     // temporary storage
@@ -48,7 +47,8 @@ CnfManager::CnfManager(Cnf &cnf) {
     imp[1].resize(vc + 1);
 
     // mark bottom of stack with variable 0
-    vars[*(stackTop++) = 0].dLevel = 0;
+    stack.push_back(0);
+    vars[0].dLevel = 0;
     vars[0].value = _FREE;
 
     // create litPool
@@ -65,7 +65,10 @@ CnfManager::CnfManager(Cnf &cnf) {
     for (i = 0; i < cnf.cc; i++) {
         if (cnf.clauses[i][1] == 0) {        // unit clause
             int lit = cnf.clauses[i][0];
-            if (FREE(lit)) setLiteral(*(stackTop++) = lit, zero);
+            if (FREE(lit)) {
+                stack.push_back(lit);
+                setLiteral(lit, stack.data());
+            }
             else if (RESOLVED(lit)) {
                 printf("c contradictory unit clauses %d, %d\n", lit, -lit);
                 printf("s UNSATISFIABLE\n");
@@ -111,8 +114,6 @@ CnfManager::CnfManager(Cnf &cnf) {
 
 CnfManager::~CnfManager() {
     for (vector<int *>::iterator it = litPools.begin(); it != litPools.end(); free(*(it++)));
-    while (*(--stackTop));
-    free(stackTop);
     for (unsigned i = 1; i <= vc; i++) for (unsigned j = 0; j <= 1; j++) free(vars[i].imp[j]);
     free(varOrder);
     free(varPosition);
@@ -120,10 +121,12 @@ CnfManager::~CnfManager() {
 }
 
 bool CnfManager::assertUnitClauses() {
-    for (int *p = stackTop - 1; *p; p--) {
-        int lit = *p;
-        if (p != stackTop - 1)
-            *p = *(--stackTop);
+    for (int i = stack.size() - 1; i > 0; i--) {
+        int lit = stack[i];
+        if (i != stack.size() - 1) {
+            stack[i] = stack.back();
+        }
+        stack.pop_back();
         if (!assertLiteral(lit, litPool + litPoolSize - 1)) {
             backtrack(dLevel - 1);
             return false;
@@ -139,13 +142,17 @@ inline void CnfManager::setLiteral(int lit, int *ante) {
 }
 
 bool CnfManager::assertLiteral(int lit, int *ante) {
-    int *newStackTop = stackTop;
-    setLiteral(*(newStackTop++) = lit, ante);
+    vector<int> new_stack;
+    int new_stack_it = 0;
+
+    new_stack.push_back(lit);
+    setLiteral(lit, ante);
     DB(printf("%d: %d =>", dLevel, lit);)
 
-    while (stackTop < newStackTop) {
+    while (new_stack_it < new_stack.size()) {
         // the literal resolved (as opposed to set)
-        int lit = NEG(*(stackTop++));
+        int lit = NEG(new_stack[new_stack_it++]);
+        stack.push_back(-lit);
 
         // implications via binary clauses
         int *impList = IMPLIST(lit);
@@ -154,12 +161,13 @@ bool CnfManager::assertLiteral(int lit, int *ante) {
             if (FREE(*imp)) {
                 if (*imp == 0) break;    // end of list
                 DB(printf(" %d", *imp);)
-                setLiteral(*(newStackTop++) = *imp, impList + 1);
+                new_stack.push_back(*imp);
+                setLiteral(*imp, impList + 1);
                 // contradiction
             } else if (RESOLVED(*imp)) {
                 DB(printf(" [%d]\n", *imp);)
                 nConflicts++;
-                stackTop = newStackTop;
+                stack.insert(stack.end(), new_stack.begin() + new_stack_it, new_stack.end());
                 *impList = *imp;    // make up temporary binary clause
                 learnClause(impList);    // for clause learning purposes
                 return false;
@@ -208,7 +216,8 @@ bool CnfManager::assertLiteral(int lit, int *ante) {
                 // implication
                 if (FREE(*otherWatch)) {
                     DB(printf(" %d", *otherWatch);)
-                    setLiteral(*(newStackTop++) = *otherWatch, first + 1);
+                    new_stack.push_back(*otherWatch);
+                    setLiteral(*otherWatch, first + 1);
 
                     // move implied literal to beginning of clause
                     if (otherWatch != first) {
@@ -220,7 +229,7 @@ bool CnfManager::assertLiteral(int lit, int *ante) {
                 } else if (RESOLVED(*otherWatch)) {
                     DB(printf(" [%d]\n", *otherWatch);)
                     nConflicts++;
-                    stackTop = newStackTop;
+                    stack.insert(stack.end(), new_stack.begin() + new_stack_it, new_stack.end());
                     learnClause(first);
                     return false;
                 }
@@ -260,7 +269,8 @@ void CnfManager::learnClause(int *first) {
     int lit;
     while (true) {
         // pop literal from stack as in backtrack
-        lit = *(--stackTop);
+        lit = stack.back();
+        stack.pop_back();
         unsigned var = VAR(lit);
         vars[var].value = _FREE;
         if (!vars[var].mark) {

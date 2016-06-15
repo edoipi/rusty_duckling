@@ -77,7 +77,7 @@ protected:
     vector<int *> clauses;        // array of conflict clauses
     int nextClause;        // starting point to look for unsatisfied conflict clause
 
-    int *stackTop;            // decision/implication stack
+    vector<int> stack;            // decision/implication stack
     unsigned aLevel;        // assertion level
     unsigned dLevel;        // decision level
     unsigned nDecisions;        // num of decisions
@@ -116,11 +116,11 @@ inline bool CnfManager::decide(int lit) {
 }
 
 inline void CnfManager::backtrack(unsigned bLevel) {
-    for (unsigned var; vars[var = VAR(*(stackTop - 1))].dLevel > bLevel;) {
+    for (unsigned var; vars[var = VAR(stack.back())].dLevel > bLevel;) {
         if (vars[var].dLevel < dLevel) vars[var].phase = vars[var].value;
         vars[var].value = _FREE;
         if (varPosition[var] < nextVar) nextVar = varPosition[var];
-        stackTop--;
+        stack.pop_back();
     }
     dLevel = bLevel;
 }

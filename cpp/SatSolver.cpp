@@ -31,16 +31,6 @@ Fifth Floor, Boston, MA  02110-1301  USA
 #define HALFLIFE 128
 #define _DT 32        // RSAT phase selection threshold
 
-struct compScores : public binary_function<unsigned, unsigned, bool> {
-    Variable *vars;
-
-    compScores(Variable *myVars) : vars(myVars) { }
-
-    bool operator()(unsigned a, unsigned b) const {
-        return SCORE(a) > SCORE(b);
-    }
-};
-
 SatSolver::SatSolver(Cnf &cnf) : CnfManager(cnf) {
     // initialize parameters
     nextRestart = luby.next() * (lubyUnit = 512);
@@ -66,7 +56,7 @@ SatSolver::SatSolver(Cnf &cnf) : CnfManager(cnf) {
             varOrder[nVars++] = i;
             vars[i].phase = (vars[i].activity[_POSI] > vars[i].activity[_NEGA]) ? _POSI : _NEGA;
         }
-    sort(varOrder, varOrder + nVars, compScores(vars));
+    sort(varOrder, varOrder + nVars, [&](unsigned a, unsigned b) -> bool { return SCORE(a) > SCORE(b); });
     for (unsigned i = 0; i < nVars; i++) varPosition[varOrder[i]] = i;
     nextVar = 0;
     nextClause = clauses.size() - 1;
