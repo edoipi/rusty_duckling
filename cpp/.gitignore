@@ -1,3 +1,4 @@
 *.idea
 CmakeLists.txt
 *.exe
+*.o

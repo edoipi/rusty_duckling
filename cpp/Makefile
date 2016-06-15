@@ -1,4 +1,4 @@
-CC = g++ -Wall -O3 -DNDEBUG
+CC = g++ -std=c++11 -Wall -O3 -DNDEBUG
 HEADERS = Cnf.h CnfManager.h SatSolver.h
 OBJS = Cnf.o CnfManager.o SatSolver.o main.o
 
