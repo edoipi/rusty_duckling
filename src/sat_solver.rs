@@ -156,13 +156,13 @@ impl SatSolver {
 					if self.cnf_manager.conflict_count == self.next_restart {
 						self.cnf_manager.restart_count += 1;
 						self.next_restart += self.restarter.next_threshold() * self.restarter_unit;
-						self.cnf_manager.backtrack(1);
+						self.cnf_manager.revert_to_decision_level(1);
 						if self.cnf_manager.decision_level != self.cnf_manager.assertion_level {
 							break;
 						}
 					} else {
 						let level = self.cnf_manager.assertion_level;
-						self.cnf_manager.backtrack(level);
+						self.cnf_manager.revert_to_decision_level(level);
 					}
 
 					if self.cnf_manager.assert_conflict_literal() {
