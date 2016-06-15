@@ -1,5 +1,4 @@
 use std::iter::*;
-use std::process::exit;
 use cnf_manager::*;
 use consts;
 use SatInstance;
@@ -171,34 +170,6 @@ impl SatSolver {
 				}
 			}
 			lit = self.select_literal();
-		}
-		if !self.verify_solution() {
-			println!("ERROR");
-			exit(0);
-		}
-		true
-	}
-
-	pub fn verify_solution(&self) -> bool {
-		let ref pool = self.cnf_manager.lit_pool;
-		let mut i = 0;
-		while i < self.cnf_manager.lit_pool_size_orig {
-			let mut satisfied = false;
-			while pool[i] != 0 {
-				let ref lit = pool[i];
-				i += 1;
-				if self.cnf_manager.good(&lit) {
-					satisfied = true;
-					while pool[i] != 0 {
-						i += 1;
-					}
-					break;
-				}
-			}
-			i += 1;
-			if !satisfied {
-				return false;
-			}
 		}
 		true
 	}

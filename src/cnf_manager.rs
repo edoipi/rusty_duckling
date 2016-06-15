@@ -14,7 +14,6 @@ pub struct CnfManager {
 	pub next_var : usize,
 
 	pub lit_pool : Vec<i32>,
-	pub lit_pool_size_orig : usize,
 	pub clauses : Vec<usize>,
 	pub next_clause : i32,
 
@@ -38,7 +37,6 @@ impl CnfManager {
 			var_position : Vec::new(),
 			next_var : 0,
 			lit_pool : Vec::new(),
-			lit_pool_size_orig : 0,
 			clauses : Vec::new(),
 			next_clause : 0,
 			decision_stack : Vec::new(),
@@ -92,7 +90,6 @@ impl CnfManager {
 				ret.lit_pool.push(0);
 			}
 		}
-		ret.lit_pool_size_orig = ret.lit_pool.len();
 
 		for i in 1..ret.var_count+1 {
 			for j in 0..2 {
