@@ -35,7 +35,7 @@ pub struct SatSolver {
 	pub next_restart : i32
 }
 
-impl<'w> SatSolver {
+impl SatSolver {
 	pub fn new(cnf: &Cnf) -> SatSolver {
 		let mut ret = SatSolver {
 			cnf_manager : CnfManager::new(cnf),
@@ -65,7 +65,7 @@ impl<'w> SatSolver {
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
 			if ret.cnf_manager.vars[i].value == VA::Free && SCORE(&(i as i32), &ret.cnf_manager) > 0 {
 				ret.cnf_manager.var_order.push(i as i32);
-				ret.cnf_manager.vars[i].phase = 
+				ret.cnf_manager.vars[i].phase =
 					if ret.cnf_manager.vars[i].activity[VA::Pos as usize] > ret.cnf_manager.vars[i].activity[VA::Neg as usize] {
 						true
 					} else {
@@ -87,7 +87,6 @@ impl<'w> SatSolver {
 	}
 
 	pub fn selectLiteral(& mut self) -> i32 {
-		//println!("selectLiteral");
 		let mut x = 0 as i32;
 		let last_clause = if self.cnf_manager.next_clause > 256 {
 			self.cnf_manager.next_clause - 256
@@ -164,16 +163,13 @@ impl<'w> SatSolver {
 	}
 
 	pub fn run(&mut self) -> bool {
-		//println!("run {}", self.cnf_manager.decision_level);
 		if self.cnf_manager.decision_level == 0 {
 			return false;
 		}
 		let mut lit = self.selectLiteral();
 		while lit != 0 {
-			//println!("selected literal: {}", lit);
 			if !self.cnf_manager.decide(lit) {
 				loop {
-					//println!("aLevel {}", self.cnf_manager.assertion_level);
 					if self.cnf_manager.assertion_level == 0 {
 						return false;
 					}
