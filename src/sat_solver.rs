@@ -68,8 +68,8 @@ impl SatSolver {
 
 	pub fn select_literal(& mut self) -> i32 {
 		let mut x = 0 as i32;
-		let last_clause = if self.cnf_manager.next_clause > 256 {
-			self.cnf_manager.next_clause - 256
+		let last_clause = if self.cnf_manager.next_clause > consts::CLAUSE_LIMIT {
+			self.cnf_manager.next_clause - consts::CLAUSE_LIMIT
 		} else {
 			0
 		};

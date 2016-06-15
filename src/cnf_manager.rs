@@ -4,6 +4,7 @@ use SatInstance;
 use AnteLocation;
 use VariableInfo;
 use utils::*;
+use consts;
 
 pub struct CnfManager {
 	pub var_count : i32,
@@ -449,7 +450,7 @@ impl CnfManager {
 				continue;
 			}
 
-			let mut step = 0x400;
+			let mut step = consts::STEP_INITIAL;
 			let mut q = pos - step;
 			while q >= 0 {
 				if self.weight(&self.var_order[q as usize]) >= weight {
