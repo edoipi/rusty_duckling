@@ -32,9 +32,9 @@ impl SatSolver {
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
 			if ret.cnf_manager.vars[i].value == VA::Free {
 				if ret.cnf_manager.vars[i].activity[VA::Pos as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Neg as usize] > 0 {
-					ret.cnf_manager.assertLiteral(-(i as i32), ArrTuple::new(), 0);
+					ret.cnf_manager.assert_literal(-(i as i32), ArrTuple::new(), 0);
 				} else if ret.cnf_manager.vars[i].activity[VA::Neg as usize] == 0 && ret.cnf_manager.vars[i].activity[VA::Pos as usize] > 0 {
-					ret.cnf_manager.assertLiteral((i as i32), ArrTuple::new(), 0);
+					ret.cnf_manager.assert_literal((i as i32), ArrTuple::new(), 0);
 				}
 			}
 		}
@@ -153,7 +153,7 @@ impl SatSolver {
 
 					if self.cnf_manager.conflict_count == self.next_decay {
 						self.next_decay += 128;
-						self.cnf_manager.scoreDecay();
+						self.cnf_manager.score_decay();
 					}
 
 					self.cnf_manager.next_clause = self.cnf_manager.clauses.len() as i32 - 1;
@@ -170,7 +170,7 @@ impl SatSolver {
 						self.cnf_manager.backtrack(level);
 					}
 
-					if self.cnf_manager.assertCL() {
+					if self.cnf_manager.assert_conflict_literal() {
 						break;
 					}
 				}
