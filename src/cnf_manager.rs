@@ -21,23 +21,6 @@ pub fn NEG(&lit : &i32) -> i32 {
 	-lit
 }
 
-pub fn FREE(&lit : &i32, m : &CnfManager) -> bool {
-	m.vars[VAR(&lit)].value == VA::Free
-}
-
-pub fn SET(&lit : &i32, m : &CnfManager) -> bool {
-	m.vars[VAR(&lit)].value == SIGN(&lit)
-}
-
-pub fn RESOLVED(&lit : &i32, m : &CnfManager) -> bool {
-	let neg = NEG(&lit);
-	m.vars[VAR(&lit)].value == SIGN(&neg)
-}
-
-pub fn SCORE(&var : &i32, m : &CnfManager) -> i32 {
-	m.vars[var as usize].activity[0] + m.vars[var as usize].activity[1]
-}
-
 #[derive(Clone)]
 pub struct ArrTuple {
 	pub is_null: bool,
@@ -159,10 +142,10 @@ impl CnfManager {
 		for i in 0..sat_instance.clause_count as usize {
 			if sat_instance.clauses[i].len() == 1 {
 				let lit = sat_instance.clauses[i][0];
-				if FREE(&lit, &ret) {
+				if ret.free(&lit) {
 					ret.decision_stack.push(lit);
 					ret.set_literal(lit, ArrTuple::new(), 0);
-				} else if RESOLVED(&lit, &ret) {
+				} else if ret.bad(&lit) {
 					println!("UNSAT");
 					exit(0);
 				}
@@ -230,13 +213,13 @@ impl CnfManager {
 			let imp = &mut self2.vars[VAR(&lit)].bin_imp[SIGN(&lit) as usize];
 			while imp_ind < imp.len() {
 				let imp_lit = imp[imp_ind];
-				if FREE(&imp_lit, &self) {
+				if self.free(&imp_lit) {
 					if imp_lit == 0 {
 						break;
 					}
 					new_stack.push(imp_lit);
 					self3.set_literal(imp_lit, ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 1);
-				} else if RESOLVED(&imp_lit, &self) {
+				} else if self.bad(&imp_lit) {
 					self3.conflict_count += 1;
 					while new_stack_it < new_stack.len() {
 						self3.decision_stack.push(new_stack[new_stack_it]);
@@ -263,14 +246,14 @@ impl CnfManager {
 					other_watch = first;
 				}
 
-				if SET(&self.lit_pool[other_watch], &self) {
+				if self.good(&self.lit_pool[other_watch]) {
 					it += 1;
 					continue;
 				}
 
 				let mut p = first + 2;
 				let mut found = true;
-				while RESOLVED(&self.lit_pool[p], &self) {
+				while self.bad(&self.lit_pool[p]) {
 					p += 1;
 				}
 				if self.lit_pool[p] == 0 {
@@ -290,7 +273,7 @@ impl CnfManager {
 					self.lit_pool[p] = x;
 				} else {
 					let olit = self.lit_pool[other_watch];
-					if FREE(&olit, &self) {
+					if self.free(&olit) {
 						new_stack.push(olit);
 						self.set_literal(olit, ArrTuple::ctor(true), first + 1);
 
@@ -299,7 +282,7 @@ impl CnfManager {
 							self.lit_pool[other_watch] = self.lit_pool[first];
 							self.lit_pool[first] = x;
 						}
-					} else if RESOLVED(&olit, &self) {
+					} else if self.bad(&olit) {
 						self.conflict_count += 1;
 						while new_stack_it < new_stack.len() {
 							self.decision_stack.push(new_stack[new_stack_it]);
@@ -354,7 +337,7 @@ impl CnfManager {
 			return;
 		}
 
-		self2.update_scores(tuple.clone(), ind);
+		self2.update_weights(tuple.clone(), ind);
 
 		self.conflict_lit.clear();
 		self.tmp_conflict_lit.clear();
@@ -388,7 +371,7 @@ impl CnfManager {
 
 			self2.vars[var].uip_mark = false;
 			if self.vars[var].ante.is_null == false {
-				self2.update_scores(self3.vars[var].ante.clone(), self4.vars[var].ante_ind - 1)
+				self2.update_weights(self3.vars[var].ante.clone(), self4.vars[var].ante_ind - 1)
 			}
 
 
@@ -518,7 +501,7 @@ impl CnfManager {
 		}
 	}
 
-	pub fn update_scores(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
+	pub fn update_weights(&mut self, tuple : ArrTuple, mut ind : usize) -> () {
 		let self2 = unsafe {&mut *(self as *mut CnfManager)};
 		let vec =
 			if tuple.is_lit_pool {
@@ -538,15 +521,15 @@ impl CnfManager {
 				continue;
 			}
 
-			let score = SCORE(&(v as i32), &self);
-			if score <= SCORE(&self.var_order[(pos - 1) as usize], &self) {
+			let weight = self.weight(&(v as i32));
+			if weight <= self.weight(&self.var_order[(pos - 1) as usize]) {
 				continue;
 			}
 
 			let mut step = 0x400;
 			let mut q = pos - step;
 			while q >= 0 {
-				if SCORE(&self.var_order[q as usize], &self) >= score {
+				if self.weight(&self.var_order[q as usize]) >= weight {
 					break;
 				}
 				q -= step;
@@ -554,7 +537,7 @@ impl CnfManager {
 			q += step;
 			step >>= 1;
 			while step > 0 {
-				if q - step >= 0 && SCORE(&self.var_order[(q - step) as usize], &self) < score {
+				if q - step >= 0 && self.weight(&self.var_order[(q - step) as usize]) < weight {
 					q -= step;
 				}
 				step >>= 1;
@@ -569,6 +552,23 @@ impl CnfManager {
 
 	pub fn sort_vars(&mut self) {
 		let uns = unsafe {&mut *(self as *mut CnfManager)};
-		self.var_order.sort_by(|a, b| SCORE(a, &uns).cmp(&SCORE(b, &uns)));
+		self.var_order.sort_by(|a, b| uns.weight(a).cmp(&uns.weight(b)));
+	}
+
+	pub fn free(&self, &lit : &i32) -> bool {
+		self.vars[VAR(&lit)].value == VA::Free
+	}
+
+	pub fn good(&self, &lit : &i32) -> bool {
+		self.vars[VAR(&lit)].value == SIGN(&lit)
+	}
+
+	pub fn bad(&self, &lit : &i32) -> bool {
+		let neg = NEG(&lit);
+		self.vars[VAR(&lit)].value == SIGN(&neg)
+	}
+
+	pub fn weight(&self, &var : &i32) -> i32 {
+		self.vars[var as usize].activity[0] + self.vars[var as usize].activity[1]
 	}
 }

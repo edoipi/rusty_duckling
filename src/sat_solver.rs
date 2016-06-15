@@ -40,7 +40,7 @@ impl SatSolver {
 		}
 
 		for i in 1..(ret.cnf_manager.var_count+1) as usize {
-			if ret.cnf_manager.vars[i].value == VA::Free && SCORE(&(i as i32), &ret.cnf_manager) > 0 {
+			if ret.cnf_manager.vars[i].value == VA::Free && ret.cnf_manager.weight(&(i as i32)) > 0 {
 				ret.cnf_manager.var_order.push(i as i32);
 				ret.cnf_manager.vars[i].phase =
 					if ret.cnf_manager.vars[i].activity[VA::Pos as usize] > ret.cnf_manager.vars[i].activity[VA::Neg as usize] {
@@ -81,7 +81,7 @@ impl SatSolver {
 				if lit == 0 {
 					break;
 				}
-				if SET(&lit, &self.cnf_manager) {
+				if self.cnf_manager.good(&lit) {
 					sat = true;
 					break;
 				}
@@ -91,16 +91,16 @@ impl SatSolver {
 				continue;
 			}
 
-			let mut score = -1;
+			let mut weight = -1;
 			ind = self.cnf_manager.clauses[i as usize] as usize;
 			while self.cnf_manager.lit_pool[ind] != 0 {
 				let lit = self.cnf_manager.lit_pool[ind];
 				if lit == 0 {
 					break;
 				}
-				if FREE(&lit, &self.cnf_manager) && SCORE(&(VAR(&lit) as i32), &self.cnf_manager) > score {
+				if self.cnf_manager.free(&lit) && self.cnf_manager.weight(&(VAR(&lit) as i32)) > weight {
 					x = VAR(&lit) as i32;
-					score = SCORE(&x, &self.cnf_manager);
+					weight = self.cnf_manager.weight(&x);
 				}
 				ind += 1;
 			}
@@ -192,7 +192,7 @@ impl SatSolver {
 			while pool[i] != 0 {
 				let ref lit = pool[i];
 				i += 1;
-				if SET(&lit, &self.cnf_manager) {
+				if self.cnf_manager.good(&lit) {
 					satisfied = true;
 					while pool[i] != 0 {
 						i += 1;
