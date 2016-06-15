@@ -122,7 +122,8 @@ CnfManager::~CnfManager() {
 bool CnfManager::assertUnitClauses() {
     for (int *p = stackTop - 1; *p; p--) {
         int lit = *p;
-        *p = *(--stackTop);
+        if (p != stackTop - 1)
+            *p = *(--stackTop);
         if (!assertLiteral(lit, litPool + litPoolSize - 1)) {
             backtrack(dLevel - 1);
             return false;
