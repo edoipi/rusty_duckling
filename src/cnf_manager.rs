@@ -1,25 +1,7 @@
 use std::collections::VecDeque;
 use std::process::exit;
 use SatInstance;
-
-#[derive(PartialEq, Clone)]
-pub enum VA {
-	Neg = 0,
-	Pos = 1,
-	Free = 2
-}
-
-pub fn SIGN(&lit : &i32) -> VA {
-	if lit > 0 {VA::Pos} else {VA::Neg}
-}
-
-pub fn VAR(&lit : &i32) -> usize {
-	lit.abs() as usize
-}
-
-pub fn NEG(&lit : &i32) -> i32 {
-	-lit
-}
+use utils::*;
 
 #[derive(Clone)]
 pub struct ArrTuple {
@@ -152,17 +134,17 @@ impl CnfManager {
 			} else if sat_instance.clauses[i].len() == 2 {
 				let lit0 = sat_instance.clauses[i][0];
 				let lit1 = sat_instance.clauses[i][1];
-				imp[SIGN(&lit0) as usize][VAR(&lit0)].push(lit1);
-				imp[SIGN(&lit1) as usize][VAR(&lit1)].push(lit0);
-				ret.vars[VAR(&lit0)].activity[SIGN(&lit0) as usize] += 1;
-				ret.vars[VAR(&lit1)].activity[SIGN(&lit1) as usize] += 1;
+				imp[sign(&lit0) as usize][to_var(&lit0)].push(lit1);
+				imp[sign(&lit1) as usize][to_var(&lit1)].push(lit0);
+				ret.vars[to_var(&lit0)].activity[sign(&lit0) as usize] += 1;
+				ret.vars[to_var(&lit1)].activity[sign(&lit1) as usize] += 1;
 			} else {
 				let lit0 = sat_instance.clauses[i][0];
 				let lit1 = sat_instance.clauses[i][1];
-				ret.vars[VAR(&lit0)].watch[SIGN(&lit0) as usize].push(ret.lit_pool.len());
-				ret.vars[VAR(&lit1)].watch[SIGN(&lit1) as usize].push(ret.lit_pool.len());
+				ret.vars[to_var(&lit0)].watch[sign(&lit0) as usize].push(ret.lit_pool.len());
+				ret.vars[to_var(&lit1)].watch[sign(&lit1) as usize].push(ret.lit_pool.len());
 				for j in sat_instance.clauses[i].iter() {
-					ret.vars[VAR(j)].activity[SIGN(j) as usize] += 1;
+					ret.vars[to_var(j)].activity[sign(j) as usize] += 1;
 					ret.lit_pool.push(j.clone());
 				}
 				ret.lit_pool.push(0);
@@ -187,10 +169,10 @@ impl CnfManager {
 	}
 
 	pub fn set_literal(&mut self, lit : i32, ante : ArrTuple, ind : usize) -> () {
-		self.vars[VAR(&lit)].value = SIGN(&lit);
-		self.vars[VAR(&lit)].ante = ante;
-		self.vars[VAR(&lit)].ante_ind = ind;
-		self.vars[VAR(&lit)].decision_level = self.decision_level;
+		self.vars[to_var(&lit)].value = sign(&lit);
+		self.vars[to_var(&lit)].ante = ante;
+		self.vars[to_var(&lit)].ante_ind = ind;
+		self.vars[to_var(&lit)].decision_level = self.decision_level;
 	}
 
 	pub fn assert_literal(&mut self, mut lit : i32, ante : ArrTuple, ante_ind : usize) -> bool {
@@ -204,13 +186,13 @@ impl CnfManager {
 		self.set_literal(lit, ante, ante_ind);
 
 		while new_stack_it < new_stack.len() {
-			lit = NEG(&new_stack[new_stack_it]);
+			lit = neg(&new_stack[new_stack_it]);
 			new_stack_it += 1;
 			self.decision_stack.push(-lit);
 
 			let mut imp_ind = 3;
 			{
-			let imp = &mut self2.vars[VAR(&lit)].bin_imp[SIGN(&lit) as usize];
+			let imp = &mut self2.vars[to_var(&lit)].bin_imp[sign(&lit) as usize];
 			while imp_ind < imp.len() {
 				let imp_lit = imp[imp_ind];
 				if self.free(&imp_lit) {
@@ -218,7 +200,7 @@ impl CnfManager {
 						break;
 					}
 					new_stack.push(imp_lit);
-					self3.set_literal(imp_lit, ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 1);
+					self3.set_literal(imp_lit, ArrTuple::ctor2(to_var(&lit), sign(&lit) as usize), 1);
 				} else if self.bad(&imp_lit) {
 					self3.conflict_count += 1;
 					while new_stack_it < new_stack.len() {
@@ -226,13 +208,13 @@ impl CnfManager {
 						new_stack_it += 1;
 					}
 					imp[0] = imp_lit;
-					self3.learn_clause(ArrTuple::ctor2(VAR(&lit), SIGN(&lit) as usize), 0);
+					self3.learn_clause(ArrTuple::ctor2(to_var(&lit), sign(&lit) as usize), 0);
 					return false;
 				}
 				imp_ind += 1;
 			}}
 
-			let watchlist = &mut self2.vars[VAR(&lit)].watch[SIGN(&lit) as usize];
+			let watchlist = &mut self2.vars[to_var(&lit)].watch[sign(&lit) as usize];
 			let mut it : i32 = 0;
 			while it < watchlist.len() as i32 {
 				let first = watchlist[it as usize];
@@ -262,7 +244,7 @@ impl CnfManager {
 
 				if found {
 					let plit = self.lit_pool[p];
-					self.vars[VAR(&plit)].watch[SIGN(&plit) as usize].push(first);
+					self.vars[to_var(&plit)].watch[sign(&plit) as usize].push(first);
 
 					watchlist[it as usize] = watchlist.last().unwrap().clone();
 					watchlist.pop();
@@ -345,22 +327,22 @@ impl CnfManager {
 		while conflict_clause[ind] != 0 {
 			let lit = conflict_clause[ind];
 			ind += 1;
-			if self.vars[VAR(&lit)].decision_level == 1 {
+			if self.vars[to_var(&lit)].decision_level == 1 {
 				continue;
 			}
-			if self.vars[VAR(&lit)].decision_level < self.decision_level {
+			if self.vars[to_var(&lit)].decision_level < self.decision_level {
 				self.tmp_conflict_lit.push_back(lit);
 			} else {
 				cur_level_lits += 1;
 			}
-			self2.vars[VAR(&lit)].uip_mark = true;
+			self2.vars[to_var(&lit)].uip_mark = true;
 		}
 
 		let mut lit;
 		loop {
 			lit = self.decision_stack.last().unwrap().clone();
 			self.decision_stack.pop();
-			let var = VAR(&lit);
+			let var = to_var(&lit);
 			self2.vars[var].value = VA::Free;
 			if !self.vars[var].uip_mark {
 				if self.var_position[var] < self.next_var {
@@ -399,15 +381,15 @@ impl CnfManager {
 				while ante[z] != 0 {
 					let v = ante[z];
 					z += 1;
-					if self.vars[VAR(&v)].uip_mark || self.vars[VAR(&v)].decision_level == 1 {
+					if self.vars[to_var(&v)].uip_mark || self.vars[to_var(&v)].decision_level == 1 {
 						continue;
 					}
-					if self.vars[VAR(&v)].decision_level < self.decision_level {
+					if self.vars[to_var(&v)].decision_level < self.decision_level {
 						self.tmp_conflict_lit.push_back(v);
 					} else {
 						cur_level_lits += 1;
 					}
-					self2.vars[VAR(&v)].uip_mark = true;
+					self2.vars[to_var(&v)].uip_mark = true;
 				}
 			}
 		}
@@ -415,7 +397,7 @@ impl CnfManager {
 		self.assertion_level = 1;
 		for conf_lit in self.tmp_conflict_lit.iter() {
 			let mut redundant = true;
-			let x = &self.vars[VAR(conf_lit)].ante;
+			let x = &self.vars[to_var(conf_lit)].ante;
 			if x.is_null == false {
 				let ante =
 					if x.is_lit_pool {
@@ -423,9 +405,9 @@ impl CnfManager {
 					} else {
 						&self.vars[x.var_index].bin_imp[x.positive]
 					};
-				let mut z = self.vars[VAR(conf_lit)].ante_ind;
+				let mut z = self.vars[to_var(conf_lit)].ante_ind;
 				while ante[z] != 0 {
-					if !self.vars[VAR(&ante[z])].uip_mark {
+					if !self.vars[to_var(&ante[z])].uip_mark {
 						redundant = false;
 						break;
 					}
@@ -436,8 +418,8 @@ impl CnfManager {
 			}
 
 			if !redundant {
-				if self.vars[VAR(conf_lit)].decision_level > self.assertion_level {
-					self.assertion_level = self.vars[VAR(conf_lit)].decision_level;
+				if self.vars[to_var(conf_lit)].decision_level > self.assertion_level {
+					self.assertion_level = self.vars[to_var(conf_lit)].decision_level;
 					self.conflict_lit.push_front(conf_lit.clone());
 				} else {
 					self.conflict_lit.push_back(conf_lit.clone());
@@ -446,7 +428,7 @@ impl CnfManager {
 		}
 
 		for tlit in self.tmp_conflict_lit.iter() {
-			self2.vars[VAR(tlit)].uip_mark = false;
+			self2.vars[to_var(tlit)].uip_mark = false;
 		}
 
 		self2.conflict_lit.push_back(-lit);
@@ -460,9 +442,9 @@ impl CnfManager {
 			self.clauses.push(self.conflict_clause_ind);
 			self.lit_pool.push(self.conflict_lit.front().unwrap().clone());
 			let back_lit = self.conflict_lit.back().unwrap();
-			self.vars[VAR(back_lit)].watch[SIGN(back_lit) as usize].push(self.conflict_clause_ind);
+			self.vars[to_var(back_lit)].watch[sign(back_lit) as usize].push(self.conflict_clause_ind);
 			let front_lit = self.conflict_lit.front().unwrap();
-			self.vars[VAR(front_lit)].watch[SIGN(front_lit) as usize].push(self.conflict_clause_ind);
+			self.vars[to_var(front_lit)].watch[sign(front_lit) as usize].push(self.conflict_clause_ind);
 
 			for i in 1..self.conflict_lit.len()-1 {
 				self.lit_pool.push(self.conflict_lit[i]);
@@ -478,7 +460,7 @@ impl CnfManager {
 	}
 
 	pub fn backtrack(&mut self, level : i32) -> () {
-		let mut var = VAR(self.decision_stack.last().unwrap());
+		let mut var = to_var(self.decision_stack.last().unwrap());
 		while self.vars[var].decision_level > level {
 			if self.vars[var].decision_level < self.decision_level {
 				let val = self.vars[var].value.clone() as i32;
@@ -489,7 +471,7 @@ impl CnfManager {
 				self.next_var = self.var_position[var];
 			}
 			self.decision_stack.pop();
-			var = VAR(self.decision_stack.last().unwrap());
+			var = to_var(self.decision_stack.last().unwrap());
 		}
 		self.decision_level = level;
 	}
@@ -512,8 +494,8 @@ impl CnfManager {
 
 		while vec[ind] != 0 {
 			let lit = &vec[ind];
-			let v = VAR(lit);
-			self2.vars[v].activity[SIGN(lit) as usize] += 1;
+			let v = to_var(lit);
+			self2.vars[v].activity[sign(lit) as usize] += 1;
 			let pos = self.var_position[v];
 			ind += 1;
 
@@ -556,16 +538,16 @@ impl CnfManager {
 	}
 
 	pub fn free(&self, &lit : &i32) -> bool {
-		self.vars[VAR(&lit)].value == VA::Free
+		self.vars[to_var(&lit)].value == VA::Free
 	}
 
 	pub fn good(&self, &lit : &i32) -> bool {
-		self.vars[VAR(&lit)].value == SIGN(&lit)
+		self.vars[to_var(&lit)].value == sign(&lit)
 	}
 
 	pub fn bad(&self, &lit : &i32) -> bool {
-		let neg = NEG(&lit);
-		self.vars[VAR(&lit)].value == SIGN(&neg)
+		let neg = neg(&lit);
+		self.vars[to_var(&lit)].value == sign(&neg)
 	}
 
 	pub fn weight(&self, &var : &i32) -> i32 {

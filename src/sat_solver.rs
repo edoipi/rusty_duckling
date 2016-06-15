@@ -3,6 +3,7 @@ use std::process::exit;
 use cnf_manager::*;
 use SatInstance;
 use Restarter;
+use utils::*;
 
 pub struct SatSolver {
 	pub cnf_manager : CnfManager,
@@ -98,8 +99,8 @@ impl SatSolver {
 				if lit == 0 {
 					break;
 				}
-				if self.cnf_manager.free(&lit) && self.cnf_manager.weight(&(VAR(&lit) as i32)) > weight {
-					x = VAR(&lit) as i32;
+				if self.cnf_manager.free(&lit) && self.cnf_manager.weight(&(to_var(&lit) as i32)) > weight {
+					x = to_var(&lit) as i32;
 					weight = self.cnf_manager.weight(&x);
 				}
 				ind += 1;
