@@ -9,3 +9,4 @@ pub mod cnf_manager;
 pub mod sat_solver;
 pub mod restarter;
 pub mod utils;
+pub mod consts;

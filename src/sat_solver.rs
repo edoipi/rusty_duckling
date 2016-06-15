@@ -1,6 +1,7 @@
 use std::iter::*;
 use std::process::exit;
 use cnf_manager::*;
+use consts;
 use SatInstance;
 use Restarter;
 use utils::*;
@@ -18,8 +19,8 @@ impl SatSolver {
 		let mut ret = SatSolver {
 			cnf_manager : CnfManager::new(sat_instance),
 			restarter : Restarter::new(),
-			restarter_unit : 512,
-			next_decay : 128,
+			restarter_unit : consts::RESTART_MULTIPLIER,
+			next_decay : consts::DECAY_INTERVAL,
 			next_restart : 0
 		};
 
@@ -108,9 +109,9 @@ impl SatSolver {
 
 			let d = self.cnf_manager.vars[x as usize].activity[VA::Pos as usize]
 					- self.cnf_manager.vars[x as usize].activity[VA::Neg as usize];
-			if d > 32 {
+			if d > consts::PHASE_THRESHOLD {
 				return x;
-			} else if -d > 32 {
+			} else if -d > consts::PHASE_THRESHOLD {
 				return -x;
 			} else if self.cnf_manager.vars[x as usize].phase {
 				return x;
@@ -126,9 +127,9 @@ impl SatSolver {
 
 				let d = self.cnf_manager.vars[x as usize].activity[VA::Pos as usize]
 					- self.cnf_manager.vars[x as usize].activity[VA::Neg as usize];
-				if d > 32 {
+				if d > consts::PHASE_THRESHOLD {
 					return x;
-				} else if -d > 32 {
+				} else if -d > consts::PHASE_THRESHOLD {
 					return -x;
 				} else if self.cnf_manager.vars[x as usize].phase {
 					return x;
@@ -153,7 +154,7 @@ impl SatSolver {
 					}
 
 					if self.cnf_manager.conflict_count == self.next_decay {
-						self.next_decay += 128;
+						self.next_decay += consts::DECAY_INTERVAL;
 						self.cnf_manager.score_decay();
 					}
 
