@@ -158,8 +158,8 @@ impl CnfManager {
 
 			let watchlist = &mut self2.vars[to_var(&lit)].watch[sign(&lit) as usize];
 			let mut it = 0;
-			while it < watchlist.len() {
-				let first = watchlist[it];
+			while it < watchlist.len() as i32{
+				let first = watchlist[it as usize];
 				let watch;
 				let other_watch;
 				if self.lit_pool[first] == lit {
@@ -188,7 +188,7 @@ impl CnfManager {
 					let plit = self.lit_pool[p];
 					self.vars[to_var(&plit)].watch[sign(&plit) as usize].push(first);
 
-					watchlist[it] = watchlist.last().unwrap().clone();
+					watchlist[it as usize] = watchlist.last().unwrap().clone();
 					watchlist.pop();
 					it -= 1;
 
