@@ -155,7 +155,7 @@ impl Logic {
 
 			let watchlist = &mut self2.vars[to_var(&lit)].watch[sign(&lit) as usize];
 			let mut it = 0;
-			while it < watchlist.len() as i32{
+			while it < watchlist.len() as i32 {
 				let first = watchlist[it as usize];
 				let watch;
 				let other_watch;

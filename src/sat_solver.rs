@@ -31,7 +31,7 @@ impl SatSolver {
 		}
 
 
-		for i in 1..(ret.logic.var_count+1) as usize {
+		for i in 1..(ret.logic.var_count+1) {
 			if ret.logic.vars[i].value == VA::Free {
 				if ret.logic.vars[i].occurs[VA::Pos as usize] == 0 && ret.logic.vars[i].occurs[VA::Neg as usize] > 0 {
 					ret.logic.assert_literal(-(i as i32), AnteLocation::new(), 0);
@@ -41,7 +41,7 @@ impl SatSolver {
 			}
 		}
 
-		for i in 1..(ret.logic.var_count+1) as usize {
+		for i in 1..(ret.logic.var_count+1) {
 			if ret.logic.vars[i].value == VA::Free && ret.logic.weight(&i) > 0 {
 				ret.logic.var_order.push(i);
 				ret.logic.vars[i].phase =
@@ -56,7 +56,7 @@ impl SatSolver {
 		ret.logic.sort_vars();
 
 		for i in 0..ret.logic.var_order.len() {
-			ret.logic.var_position[ ret.logic.var_order[i as usize] as usize ] = i;
+			ret.logic.var_position[ret.logic.var_order[i]] = i;
 		}
 
 		ret.logic.next_var = 0;
@@ -77,7 +77,7 @@ impl SatSolver {
 			self.logic.next_clause = i;
 
 			let mut sat = false;
-			let mut ind = self.logic.clauses[i as usize] as usize;
+			let mut ind = self.logic.clauses[i as usize];
 			while self.logic.lit_pool[ind] != 0 {
 				let lit = self.logic.lit_pool[ind];
 				if lit == 0 {
@@ -94,7 +94,7 @@ impl SatSolver {
 			}
 
 			let mut weight = -1;
-			ind = self.logic.clauses[i as usize] as usize;
+			ind = self.logic.clauses[i as usize];
 			while self.logic.lit_pool[ind] != 0 {
 				let lit = self.logic.lit_pool[ind];
 				if lit == 0 {
@@ -109,8 +109,8 @@ impl SatSolver {
 			return self.decide_sign(x);
 		}
 
-		for i in (self.logic.next_var as usize)..self.logic.var_order.len() {
-			if self.logic.vars[self.logic.var_order[i] as usize].value == VA::Free {
+		for i in self.logic.next_var..self.logic.var_order.len() {
+			if self.logic.vars[self.logic.var_order[i]].value == VA::Free {
 				x = self.logic.var_order[i];
 				self.logic.next_var = i + 1;
 				return self.decide_sign(x);
@@ -120,13 +120,13 @@ impl SatSolver {
 	}
 
 	pub fn decide_sign(&self, var : usize) -> i32 {
-		let diff = self.logic.vars[var as usize].occurs[VA::Pos as usize]
-				- self.logic.vars[var as usize].occurs[VA::Neg as usize];
+		let diff = self.logic.vars[var].occurs[VA::Pos as usize]
+				- self.logic.vars[var].occurs[VA::Neg as usize];
 		if diff > consts::PHASE_THRESHOLD {
 			var as i32
 		} else if -diff > consts::PHASE_THRESHOLD {
 			-(var as i32)
-		} else if self.logic.vars[var as usize].phase {
+		} else if self.logic.vars[var].phase {
 			var as i32
 		} else {
 			-(var as i32)
@@ -175,7 +175,7 @@ impl SatSolver {
 	}
 
 	pub fn print_solution(&self) -> () {
-		for i in 1..(self.logic.var_count+1) as usize {
+		for i in 1..(self.logic.var_count+1) {
 			let ref vars = self.logic.vars;
 			if vars[i].value == VA::Pos {
 				print!("{} ", i);
