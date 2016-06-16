@@ -1,4 +1,5 @@
 pub use self::sat_instance::SatInstance;
+pub use self::sat_instance::Reader;
 pub use self::logic::Logic;
 pub use self::sat_solver::SatSolver;
 pub use self::restarter::Restarter;
