@@ -11,6 +11,10 @@ fn main() {
 	for _ in 0..instance_count {
 		let ref sat_instance = SatInstance::read(&mut reader);
 		let mut sat_solver = SatSolver::new(sat_instance);
+		if sat_solver.logic.failed == true {
+			println!("UNSAT");
+			continue;
+		}
 		let satisfiable = sat_solver.run();
 		if satisfiable {
 			println!("SAT");

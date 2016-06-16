@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::process::exit;
 use SatInstance;
 use AnteLocation;
 use VariableInfo;
@@ -25,7 +24,8 @@ pub struct Logic {
 	pub restart_count : usize,
 	pub conflict_lit : VecDeque<i32>,
 	pub tmp_conflict_lit : VecDeque<i32>,
-	pub conflict_clause_ind : usize
+	pub conflict_clause_ind : usize,
+	pub failed : bool
 }
 
 impl Logic {
@@ -47,7 +47,8 @@ impl Logic {
 			restart_count : 0,
 			conflict_lit : VecDeque::new(),
 			tmp_conflict_lit : VecDeque::new(),
-			conflict_clause_ind : 0
+			conflict_clause_ind : 0,
+			failed : false
 		};
 		let mut imp : [Vec<Vec<i32>>; 2] = [Vec::new(), Vec::new()];
 		for _ in 0..ret.var_count+1 {
@@ -69,8 +70,8 @@ impl Logic {
 					ret.decision_stack.push(lit);
 					ret.set_literal(lit, AnteLocation::new(), 0);
 				} else if ret.bad(&lit) {
-					println!("UNSAT");
-					exit(0);
+					ret.failed = true;
+					return ret;
 				}
 			} else if sat_instance.clauses[i].len() == 2 {
 				let lit0 = sat_instance.clauses[i][0];

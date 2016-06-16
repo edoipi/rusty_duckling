@@ -24,6 +24,10 @@ impl SatSolver {
 			next_restart : 0
 		};
 
+		if ret.logic.failed == true {
+			return ret;
+		}
+
 		ret.next_restart = ret.restarter.next_threshold() * ret.restarter_unit;
 
 		if ret.logic.decision_level == 0 {
