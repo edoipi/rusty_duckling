@@ -58,6 +58,7 @@ impl Logic {
 		}
 
 		ret.decision_stack.push(0);
+        ret.lit_pool.push(0);
 		ret.vars[0].decision_level = 0;
 		ret.vars[0].value = VA::Free;
 

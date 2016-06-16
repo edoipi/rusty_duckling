@@ -1,4 +1,5 @@
 use std::io;
+use std::collections::HashSet;
 
 pub struct SatInstance {
 	pub var_count : usize,
@@ -24,17 +25,30 @@ impl SatInstance {
 			match io::stdin().read_line(&mut input) {
 				Ok(_) => {
 					let mut vec = Vec::<i32>::new();
+                    let mut set = HashSet::new();
+                    let mut omit = false;
 					for it in input.split_whitespace() {
 						if it != "0" {
-							vec.push(it.parse::<i32>().unwrap());
+                            let lit = it.parse::<i32>().unwrap(); 
+							vec.push(lit);
+                            if set.contains(&(-lit)) {
+                                omit = true;
+                                break;
+                            }
+                            set.insert(lit);
 						}
 					}
+                    if omit {
+                        continue;
+                    }
+                    vec.sort();
+                    vec.dedup();
 					instance.clauses.push(vec);
 				},
 				Err(error) => println!("error: {}", error),
 			};
 		}
-
+        instance.clause_count = instance.clauses.len();
 		instance
 	}
 }
